@@ -424,7 +424,7 @@ class SafeHavenService
             "identityType" => $verification->type,
             "identityNumber" => $verification->value,
             "otp" => $otp,
-            "callbackUrl" => "https://webhook.site/2a530298-5ae4-4955-aa48-9c1420a2bc3d",
+            // "callbackUrl" => "https://webhook.site/2a530298-5ae4-4955-aa48-9c1420a2bc3d",
             "identityId" => $verification->safe_id,
             "autoSweep" => true,
             "autoSweepDetails" => [
