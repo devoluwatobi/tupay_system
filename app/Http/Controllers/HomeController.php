@@ -477,6 +477,7 @@ class HomeController extends Controller
             ];
         }
 
+        
         foreach ($betData as $betTransaction) {
             switch ($betTransaction->status) {
                 case 0:
