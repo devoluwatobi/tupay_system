@@ -1,0 +1,33 @@
+---
+deployment:
+  tasks:
+    - export APP_ENV=production
+
+    # Navigate to the project directory
+    - cd $DEPLOYMENT_TARGET
+
+    # Run Composer Install (Use --no-dev for production)
+    - /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader
+
+    # Set correct permissions
+    - find storage -type d -exec chmod 775 {} \;
+    - find storage -type f -exec chmod 664 {} \;
+    - chmod -R ug+rwx bootstrap/cache
+
+    # Run Migrations
+    - php artisan migrate --force
+
+    # Clear and cache configurations
+    - php artisan config:clear
+    - php artisan cache:clear
+    - php artisan view:clear
+    - php artisan route:clear
+    - php artisan config:cache
+    - php artisan view:cache
+    - php artisan route:cache
+
+    # Restart PHP-FPM (If applicable)
+    - /usr/local/cpanel/bin/rebuild_phpconf
+
+    # Done!
+    - echo "Deployment complete!"
