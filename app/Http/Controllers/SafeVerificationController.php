@@ -98,6 +98,7 @@ class SafeVerificationController extends Controller
                     'user_id' => $user->id,
                     'safe_id' => $server_output->data->_id,
                     'type' => $request->type,
+                    'otp' => "____",
                     "value" => $request->number,
                     "otp_id" => $server_output->data->otpId,
                     "request_data" =>  $response,

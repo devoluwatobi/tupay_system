@@ -83,7 +83,7 @@ class RMBTransactionController extends Controller
         } else {
             $balance = $wallet->balance;
             $charge = $method->charge;
-            $method->rate;
+            $rate = $method->rate;
             $total = ($request->amount * $method->rate) + $method->charge;
             $use_wallet = $wallet;
         }
