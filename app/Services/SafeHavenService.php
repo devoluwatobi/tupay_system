@@ -19,6 +19,7 @@ use App\Models\TupaySubAccounts;
 use App\Models\WalletTransaction;
 use App\Models\WalletTransactions;
 use App\Models\FundTransferRequest;
+use App\Models\SafeSubAccount;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -414,18 +415,18 @@ class SafeHavenService
 
         Log::info($user_id . " | " . $id_type . " | " .  $otp);
 
-        $verification = SafeVerification::where('user_id', $user_id)->where('type', $id_type)->first();
+        $verification = SafeSubAccount::where('user_id', $user_id)->where('type', $id_type)->first();
 
         $verif_body = [
 
             "phoneNumber" => $user->phone,
             "emailAddress" => $user->email,
             "externalReference" => strval($user->id) . "|" . ($user->created_at ? $user->created_at->timestamp : 'nil') .  rand(1000, 9999),
-            "identityType" => $verification->type,
-            "identityNumber" => $verification->value,
+            "identityType" => $verification->id_type,
+            "identityNumber" => $verification->id_value,
             "otp" => $otp,
-            // "callbackUrl" => "https://webhook.site/2a530298-5ae4-4955-aa48-9c1420a2bc3d",
-            "identityId" => $verification->safe_id,
+            "callbackUrl" => "https://api.tupay.ng/api//safe-hook",
+            "identityId" => $verification->id_safe_id,
             "autoSweep" => true,
             "autoSweepDetails" => [
                 "schedule" => "Instant",
