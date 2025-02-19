@@ -488,6 +488,32 @@ class SafeHavenService
         return false;
     }
 
+    public  static function updateWebhook()
+    {
+
+        $sub_accounts =  TupaySubAccount::all();
+
+        foreach ($sub_accounts as $account) {
+
+            SafeHavenService::refreshAccess();
+
+            // safe_haven
+            $token = SystemConfig::where('name', 'safehaven_token')->first();
+            $client_id = SystemConfig::where('name', 'ibs_client_id')->first();
+
+            $d_body = [
+                'callbackUrl' => 'https://api.tupay.ng/api/safe-hook',
+            ];
+
+            $response = Http::withHeaders(['Authorization' => 'Bearer ' . $token->value, 'ClientID' => $client_id->value, 'Content-Type' => 'application/json'])->put(env("SAFEHAVEN_BASE_URL") . '/virtual-accounts/' . $account->external_id, $d_body);
+
+            $server_output = json_decode($response);
+
+            $sub_account_data = $response->json();
+
+            Log::info($sub_account_data);
+        }
+    }
 
     public  static function createVirtualAccount($user_id) {}
 
