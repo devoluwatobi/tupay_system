@@ -415,7 +415,7 @@ class SafeHavenService
 
         Log::info($user_id . " | " . $id_type . " | " .  $otp);
 
-        $verification = SafeSubAccount::where('user_id', $user_id)->where('type', $id_type)->first();
+        $verification = SafeSubAccount::where('user_id', $user_id)->where('id_type', $id_type)->first();
 
         $verif_body = [
 
