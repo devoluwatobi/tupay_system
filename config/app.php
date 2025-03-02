@@ -54,6 +54,12 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'asset_url' => env('ASSET_URL'),
+
+    'mail_url' => 'https://api.tupay.ng',
+
+    'frontend_url' => env('FRONTEND_URL', 'https://api.tupay.ng'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

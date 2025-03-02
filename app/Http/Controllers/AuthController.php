@@ -9,12 +9,15 @@ use App\Models\Wallet;
 use App\Models\OTPCodes;
 use Illuminate\Support\Str;
 use App\Mail\VerifyOtpEmail;
+use App\Models\RewardWallet;
+use App\Services\FCMService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use App\Models\RewardWalletTransaction;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -81,12 +84,52 @@ class AuthController extends Controller
             "user_id" => $user->id,
         ]);
 
+        // Handle Referral
+        if ($request->referrer) {
+            $referr = User::where("username", $request->referrer)->first();
+            if ($referr) {
+
+                RewardWalletTransaction::create([
+                    "amount" => 5,
+                    "user_id" => $referr->id,
+                    "type" => "referral",
+                    "referred_user_id" => $user->id,
+                    "status" => 1,
+                ]);
+
+                $referrer_reward_wallet = RewardWallet::where("user_id", $referr->id)->first();
+                if ($referrer_reward_wallet == null) {
+                    RewardWallet::create([
+                        "user_id" => $referr->id,
+                        "balance" => 0,
+                    ]);
+                }
+                $referrer_reward_wallet = RewardWallet::where("user_id", $referr->id)->first();
+                $referrer_reward_wallet->balance = $referrer_reward_wallet->balance + 200;
+                $referrer_reward_wallet->save();
+
+                try {
+                    FCMService::sendToID(
+                        $referr->id,
+                        [
+                            'title' => 'NGN2000 Reward Earned 🚀',
+                            'body' => "You just earned NGN2000 reward from a referral.",
+                        ]
+                    );
+                } //catch exception
+                catch (Exception $e) {
+                    Log::error('Message: ' . $e->getMessage());
+                }
+            }
+        }
+
 
         try {
             Mail::to($user->email)->send(new VerifyOtpEmail($user->email, $otp_token, $user->first_name,));
         } catch (Exception $e) {
             Log::error("Error: " . $e->getMessage());
         }
+
 
         $response = [
             'token' => $token,

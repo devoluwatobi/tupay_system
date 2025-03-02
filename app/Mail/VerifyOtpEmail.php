@@ -36,6 +36,6 @@ class VerifyOtpEmail extends Mailable
     public function build()
     {
         return $this->subject('Verify OTP | Tupay')
-            ->view('auth.otp');
+        ->view('emails.auth.otp');
     }
 }

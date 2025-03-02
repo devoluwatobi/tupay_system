@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Exception;
 use App\Models\Wallet;
 use App\Models\RMBWallet;
+use App\Models\SystemConfig;
 use App\Services\FCMService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -32,11 +33,22 @@ class RMBWalletTransactionController extends Controller
             'amount' => 'required',
         ]);
 
+        if ($validator->fails()) {
+            return response([
+                'error' => true,
+                'message' => implode("\n", $validator->errors()->all())
+            ], 422);
+        }
+
+        $rate = SystemConfig::where('name', 'rmb2ngn_rate')->first()->value;
+        $charge = SystemConfig::where('name', 'rmb2ngn_charge')->first()->value;
+
+
         $rmb_wallet = RMBWallet::where("user_id", $user->id)->first();
         $ngn_wallet = Wallet::where("user_id", $user->id)->first();
 
-        $rmb_total = $request->amount + 0.5;
-        $ngn_total = ($request->amount) * 1650;
+        $rmb_total = $request->amount + $charge;
+        $ngn_total = $request->amount * $rate;
 
         if ($rmb_total > $rmb_wallet->balance) {
             $response = ['message' => "You don't have enough in your RMB wallet for this transaction. Please try funding your RMB wallet"];
@@ -49,16 +61,17 @@ class RMBWalletTransactionController extends Controller
                 'balance' => $rmb_wallet->balance - $rmb_total,
             ]);
 
-            $$ngn_wallet->update([
-                'balance' => $$ngn_wallet->balance + $ngn_total,
+            $ngn_wallet->update([
+                'balance' => $ngn_wallet->balance + ($ngn_total),
             ]);
         }
         RMBWalletTransaction::create([
             'user_id' => $user->id,
             'amount' => $request->amount,
             'type' => 0,
-            'charge' => 0.5,
-            'rate' => 1650,
+            'charge' => $charge,
+            'rate' => $rate,
+            'status' => 1,
         ]);
 
         try {
@@ -89,11 +102,22 @@ class RMBWalletTransactionController extends Controller
             'amount' => 'required',
         ]);
 
+        if ($validator->fails()) {
+            return response([
+                'error' => true,
+                'message' => implode("\n", $validator->errors()->all())
+            ], 422);
+        }
+
+        $rate = SystemConfig::where('name', 'ngn2rmb_rate')->first()->value;
+        $charge = SystemConfig::where('name', 'ngn2rmb_charge')->first()->value;
+
+
         $rmb_wallet = RMBWallet::where("user_id", $user->id)->first();
         $ngn_wallet = Wallet::where("user_id", $user->id)->first();
 
         $rmb_total = $request->amount;
-        $ngn_total = ($request->amount * 1650) + 800;
+        $ngn_total = ($request->amount * $rate) + $charge;
 
         if ($ngn_total > $ngn_wallet->balance) {
             $response = ['message' => "You don't have enough in your Naira wallet for this transaction. Please try funding your Naira wallet"];
@@ -114,8 +138,9 @@ class RMBWalletTransactionController extends Controller
             'user_id' => $user->id,
             'amount' => $request->amount,
             'type' => 1,
-            'charge' => 800,
-            'rate' => 1700,
+            'charge' => $charge,
+            'rate' => $rate,
+            'status' => 1,
         ]);
 
         try {
@@ -128,8 +153,8 @@ class RMBWalletTransactionController extends Controller
             );
             FCMService::sendToAdmins(
                 [
-                    'title' => 'New RMB Withdrawal',
-                    'body' => "There's a new CN¥" . $request->amount . " withdrawal submitted.",
+                    'title' => 'New RMB Top-up',
+                    'body' => "There's a new CN¥" . $request->amount . " Top-up submitted.",
                 ]
             );
         } //catch exception

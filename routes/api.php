@@ -7,18 +7,19 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BankDetailsController;
+use App\Http\Controllers\RewardWalletController;
 use App\Http\Controllers\SystemConfigController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\RMBTransactionController;
+use App\Http\Controllers\SafeSubAccountController;
+use App\Http\Controllers\TupaySubAccountController;
 use App\Http\Controllers\RMBPaymentMethodController;
 use App\Http\Controllers\SafeVerificationController;
 use App\Http\Controllers\WalletTransactionController;
 use App\Http\Controllers\BettingTransactionController;
 use App\Http\Controllers\RMBWalletTransactionController;
-use App\Http\Controllers\SafeSubAccountController;
-use App\Http\Controllers\TupaySubAccountController;
-use App\Http\Controllers\TupaySubAccountTransactionController;
 use App\Http\Controllers\UtilityBillTransactionController;
+use App\Http\Controllers\TupaySubAccountTransactionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,14 +76,14 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
         Route::get('/get-electric-types', [UtilityBillTransactionController::class, 'getElectricTypes']);
         Route::get('/get-network-list', [UtilityBillTransactionController::class, 'getNetworks']);
         Route::get('/get-data-list/{product}', [UtilityBillTransactionController::class, 'getRedDataList']);
-        Route::post('/buy-red-airtime', [UtilityBillTransactionController::class, 'buyRedAirtime']);
-        Route::get('/get-red-data-list/{product}', [UtilityBillTransactionController::class, 'getRedDataList']);
-        Route::post('/buy-red-data', [UtilityBillTransactionController::class, 'buyRedData']);
-        Route::get('/get-red-tv-list/{product}', [UtilityBillTransactionController::class, 'getRedTvPackages']);
-        Route::post('/buy-red-cable', [UtilityBillTransactionController::class, 'buyRedTVSub']);
-        Route::post('/verify-red-meter', [UtilityBillTransactionController::class, 'verifyRedMeter']);
-        Route::post('/verify-red-decoder', [UtilityBillTransactionController::class, 'verifyRedDecoder']);
-        Route::post('/buy-red-electricity', [UtilityBillTransactionController::class, 'buyRedElectricity']);
+        Route::post('/buy-red-airtime', [UtilityBillTransactionController::class, 'buyVTAirtime']);
+        Route::get('/get-red-data-list/{product}', [UtilityBillTransactionController::class, 'getVTDataList']);
+        Route::post('/buy-red-data', [UtilityBillTransactionController::class, 'buyVTData']);
+        Route::get('/get-red-tv-list/{product}', [UtilityBillTransactionController::class, 'getVTTvPackages']);
+        Route::post('/buy-red-cable', [UtilityBillTransactionController::class, 'buyVTCable']);
+        Route::post('/verify-red-meter', [UtilityBillTransactionController::class, 'verifyVTMeter']);
+        Route::post('/verify-red-decoder', [UtilityBillTransactionController::class, 'verifyVTDecoder']);
+        Route::post('/buy-red-electricity', [UtilityBillTransactionController::class, 'buyVTElectricity']);
 
         // Betting
         Route::get('/get-bet-platforms', [BettingTransactionController::class, 'getBettingPlatforms']);
@@ -119,6 +120,13 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
         Route::post('/fund-account/initiate', [SafeSubAccountController::class, 'initiate']);
         Route::post('/fund-account/create', [SafeSubAccountController::class, 'createSubAccount']);
         Route::get('/fund-account', [TupaySubAccountController::class, 'index']);
+
+        // leaderboard
+        Route::get('/rmb-transaction/leaderboard', [RMBTransactionController::class, 'leaderboard']);
+
+        // reward
+        Route::get('/rewards/claim', [RewardWalletController::class, 'claim']);
+        Route::get('/rewards', [RewardWalletController::class, 'index']);
     });
 
     // Admin

@@ -69,6 +69,7 @@ class HomeController extends Controller
             $method->logo = env('APP_URL') . $method->logo;
         }
         $data = [
+            'verifications' => $user->verifications,
             'payment_methods' => $payment_methods,
             'payment_types' => RMBPaymentType::where('status', 1)->get(),
             'me' => $user,
@@ -76,15 +77,15 @@ class HomeController extends Controller
             'rmb_balance' =>  number_format((float) $user->rmb->balance, 2),
             'banks' => $user->banks,
             'fund_account' => $user->fundAccount->first(),
-            'verifications' => $user->verifications,
+            // 'verifications' => $user->verifications,
             'configs' =>  $configs,
             'rmb2ngn' => [
-                'rate' => '1650',
-                'charge' => '0.5',
+                'rate' => SystemConfig::where('name', 'rmb2ngn_rate')->first()->value,
+                'charge' => SystemConfig::where('name', 'rmb2ngn_charge')->first()->value,
             ],
             'ngn2rmb' => [
-                'rate' => '1700',
-                'charge' => '800',
+                'rate' => SystemConfig::where('name', 'ngn2rmb_rate')->first()->value,
+                'charge' => SystemConfig::where('name', 'ngn2rmb_charge')->first()->value,
             ]
 
 
@@ -151,7 +152,7 @@ class HomeController extends Controller
     {
 
         $walData = WalletTransaction::where('status', 0)->get()->sortBy('created_at');
-        $rmb = RMBTransaction::where('status', '<>', 9)->get()->sortBy('created_at');
+        $rmb = RMBTransaction::where('status', 0)->get()->sortBy('created_at');
 
 
         foreach ($walData as $walletTransaction) {
@@ -477,7 +478,7 @@ class HomeController extends Controller
             ];
         }
 
-        
+
         foreach ($betData as $betTransaction) {
             switch ($betTransaction->status) {
                 case 0:
@@ -560,6 +561,54 @@ class HomeController extends Controller
                 'type' => 'rmb-' . $rmbTransaction->r_m_b_payment_method_title,
                 'sub_type_id' => $rmbTransaction->id,
                 'icon' => env('APP_URL') . $method->logo,
+                'currency' => "CN¥",
+                'amount' => number_format($rmbTransaction->amount, 2),
+                'status' => $status,
+                'color' => $color,
+                'created_at' => $rmbTransaction->created_at,
+                'updated_at' => $rmbTransaction->updated_at,
+                'trx' => $transaction,
+            ];
+        }
+
+        foreach ($rmb_trx as $rmbTransaction) {
+            switch ($rmbTransaction->status) {
+                case 0:
+                    $status = 'Pending';
+                    $color = 'EE7541';
+                    break;
+                case 1:
+                    $status = 'Completed';
+                    $color = '2F949A';
+                    break;
+                case 2:
+                    $status = 'Failed';
+                    $color = 'FF3B30';
+                    break;
+                case 3:
+                    $status = 'Cancelled';
+                    $color = '4A36C2';
+                    break;
+                default:
+                    $status = 'Pending';
+                    $color = '0160E1';
+                    break;
+            }
+
+            $method =  RMBPaymentMethod::where("id", $rmbTransaction->r_m_b_payment_method_id)->first();
+
+
+            // fill up trx
+            $rmbTransaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction = $rmbTransaction;
+            // $transaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction->status = $status;
+            $rmbTrans[] = [
+                'id' => $rmbTransaction->id,
+                'title' => "RMB Wallet " . ($rmbTransaction->type == 1 ? "Top-up" : "Withdrawal"),
+                'type' => $rmbTransaction->type == 1 ? 'topup' : 'convert',
+                'sub_type_id' => $rmbTransaction->id,
+                'icon' => env('APP_URL') . '/images/services/rmb_' . ($rmbTransaction->type == 1 ? 'top_up' : 'withdrawal') . '.png',
                 'currency' => "CN¥",
                 'amount' => number_format($rmbTransaction->amount, 2),
                 'status' => $status,
@@ -698,6 +747,8 @@ class HomeController extends Controller
         $utiData = UtilityBillTransaction::where('user_id', $user->id)->get()->sortByDesc('created_at');
         $walData = WalletTransaction::where('user_id', $user->id)->get()->sortByDesc('created_at');
         $rmb = RMBTransaction::where('user_id', $user->id)->get()->sortByDesc('created_at');
+        $rmb_trx = RMBWalletTransaction::where('user_id', $user->id)->get()->sortByDesc('created_at');
+        $fund = TupaySubAccountTransaction::where('user_id', $user->id)->get()->sortByDesc('created_at');
 
 
         foreach ($utiData as $billTransaction) {
@@ -882,10 +933,104 @@ class HomeController extends Controller
             ];
         }
 
+        foreach ($rmb_trx as $rmbTransaction) {
+            switch ($rmbTransaction->status) {
+                case 0:
+                    $status = 'Pending';
+                    $color = 'EE7541';
+                    break;
+                case 1:
+                    $status = 'Completed';
+                    $color = '2F949A';
+                    break;
+                case 2:
+                    $status = 'Failed';
+                    $color = 'FF3B30';
+                    break;
+                case 3:
+                    $status = 'Cancelled';
+                    $color = '4A36C2';
+                    break;
+                default:
+                    $status = 'Pending';
+                    $color = '0160E1';
+                    break;
+            }
+
+            $method =  RMBPaymentMethod::where("id", $rmbTransaction->r_m_b_payment_method_id)->first();
+
+
+            // fill up trx
+            $rmbTransaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction = $rmbTransaction;
+            // $transaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction->status = $status;
+            $rmbTrans[] = [
+                'id' => $rmbTransaction->id,
+                'title' => "RMB Wallet " . ($rmbTransaction->type == 1 ? "Top-up" : "Withdrawal"),
+                'type' => $rmbTransaction->type == 1 ? 'topup' : 'convert',
+                'sub_type_id' => $rmbTransaction->id,
+                'icon' => env('APP_URL') . '/images/services/rmb_' . ($rmbTransaction->type == 1 ? 'top_up' : 'withdrawal') . '.png',
+                'currency' => "CN¥",
+                'amount' => number_format($rmbTransaction->amount, 2),
+                'status' => $status,
+                'color' => $color,
+                'created_at' => $rmbTransaction->created_at,
+                'updated_at' => $rmbTransaction->updated_at,
+                'trx' => $transaction,
+            ];
+        }
+
+        foreach ($fund as $transaction) {
+
+            switch ($transaction->status) {
+                case 0:
+                    $status = 'Pending';
+                    $color = 'EE7541';
+                    break;
+                case 1:
+                    $status = 'Completed';
+                    $color = '2F949A';
+                    break;
+                case 2:
+                    $status = 'Failed';
+                    $color = 'FF3B30';
+                    break;
+                case 3:
+                    $status = 'Cancelled';
+                    $color = '4A36C2';
+                    break;
+                default:
+                    $status = 'Pending';
+                    $color = '0160E1';
+                    break;
+            }
+
+
+
+            // $transaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction->status = $status;
+            $fundTrx[] = [
+                'id' => $transaction->id,
+                'title' => "Wallet Top-Up",
+                'type' => 'fund',
+                'sub_type_id' => 0,
+                'icon' => env('APP_URL') . "/images/services/fund.png",
+                'currency' => "₦",
+                'amount' => number_format($transaction->settlement, 2),
+                'status' => $status,
+                'color' => $color,
+                'created_at' => $transaction->created_at,
+                'updated_at' => $transaction->updated_at,
+                'trx' => $transaction,
+            ];
+        }
+
         $transactions = array_merge(
             $wallTrans ?? [],
             $billTrans ?? [],
             $betTrans ?? [],
+            $fundTrx ?? [],
             $rmbTrans ?? []
         );
 

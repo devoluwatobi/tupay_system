@@ -6,17 +6,46 @@ use Exception;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\RMBWallet;
 use App\Services\FCMService;
 use Illuminate\Http\Request;
 use App\Models\RMBPaymentType;
 use App\Models\RMBTransaction;
 use App\Models\RMBPaymentMethod;
+use Illuminate\Support\Facades\DB;
 use App\Mail\RMBTransactionCreated;
-use App\Models\RMBWallet;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+
+if (!function_exists('hideEmailAddress')) {
+    /**
+     * Check if two names have at least two common words.
+     *
+     * @param string $name1
+     * @param string $name2
+     * @return bool
+     */
+    function hideEmailAddresshideEmailAddress($email)
+    {
+        // Split the email into parts
+        list($local, $domain) = explode('@', $email);
+
+        // Hide part of the local part
+        $local = substr($local, 0, 2) . str_repeat('*', 6);
+
+        // Split the domain into parts
+        list($domain_name, $domain_extension) = explode('.', $domain);
+
+        // Hide part of the domain name
+        $domain_name = str_repeat('*', 3);
+
+        // Combine the parts back together
+        return $local . '@' . $domain_name . '.' . $domain_extension;
+    }
+}
+
 
 class RMBTransactionController extends Controller
 {
@@ -355,5 +384,72 @@ class RMBTransactionController extends Controller
 
 
         return response($response, 200);
+    }
+
+    public function leaderboard(Request $request)
+    {
+        $leaderboard = [
+            'weekly' => $this->getWeeklyLeaderboard(),
+            'monthly' => $this->getMonthlyLeaderboard(),
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'leaderboard' => $leaderboard,
+        ]);
+    }
+
+    private function getWeeklyLeaderboard()
+    {
+        $weeklyLeaderboard = [];
+
+        for ($i = 4; $i >= 0; $i--) { // Last 4 weeks + current week
+            $startDate = Carbon::now()->startOfWeek()->subWeeks($i);
+            $endDate = Carbon::now()->endOfWeek()->subWeeks($i);
+
+            $trxx = RMBTransaction::whereBetween('created_at', [$startDate, $endDate])
+                ->where('status', RMBTransaction::APPROVED) // Only approved transactions count
+                ->groupBy('user_id')
+                ->select('user_id', DB::raw('SUM(amount) as total_amount'))
+                ->orderByDesc('total_amount')
+                ->with('user:id,first_name,email') // Load user data
+                ->take(10) // Get top 10 users
+                ->get();
+
+            foreach ($trxx as $t) {
+                $t->user->email = hideEmailAddresshideEmailAddress($t->user->email);
+            }
+
+            $weeklyLeaderboard[$startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')] = $trxx;
+        }
+
+        return $weeklyLeaderboard;
+    }
+
+    private function getMonthlyLeaderboard()
+    {
+        $monthlyLeaderboard = [];
+
+        for ($i = 6; $i >= 0; $i--) { // Last 6 months + current month
+            $startDate = Carbon::now()->startOfMonth()->subMonths($i);
+            $endDate = Carbon::now()->endOfMonth()->subMonths($i);
+
+            $trxx  = RMBTransaction::whereBetween('created_at', [$startDate, $endDate])
+                ->where('status', RMBTransaction::APPROVED) // Only approved transactions count
+                ->groupBy('user_id')
+                ->select('user_id', DB::raw('SUM(amount) as total_amount'))
+                ->orderByDesc('total_amount')
+                ->with('user:id,first_name,email') // Load user data
+                ->take(10) // Get top 10 users
+                ->get();
+
+            foreach ($trxx as $t) {
+                $t->user->email = hideEmailAddresshideEmailAddress($t->user->email);
+            }
+
+            $monthlyLeaderboard[$startDate->format('F Y')] = $trxx;
+        }
+
+        return $monthlyLeaderboard;
     }
 }
