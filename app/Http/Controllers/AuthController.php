@@ -62,6 +62,7 @@ class AuthController extends Controller
         if ($count > 0) {
             $username .= ($count + 1);
         }
+        $username = $username . rand(1000, 9999);
         $request['username'] = $username;
         $userraw = User::create($request->toArray());
         $user = User::where('id', $userraw->id)->first();

@@ -260,6 +260,24 @@ class RMBTransactionController extends Controller
         $trxUser = User::where('id', $transaction->user_id)->first();
 
         $transaction->update($form);
+
+        // refund user
+        $wallet = Wallet::where("user_id", $user->id)->first();
+        $rmb_wallet = RMBWallet::where("user_id", $user->id)->first();
+
+        $refund = ($transaction->amount * $transaction->rate) + $transaction->charge;
+
+        if ($transaction->paid_with != null && ($transaction->paid_with == 'RMB' || $transaction->paid_with == 'rmb')) {
+            $rmb_wallet->update([
+                'balance' => $rmb_wallet->balance + $refund
+            ]);
+        } else {
+            $wallet->update([
+                'balance' => $wallet->balance + $refund
+            ]);
+        }
+
+
         $response = ["message" => 'Transaction rejected'];
 
         try {
