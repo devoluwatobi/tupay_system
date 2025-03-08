@@ -126,6 +126,18 @@ class HomeController extends Controller
                 "total_available" =>  $circulation ?? "0",
                 "incoming" => $incoming ?? "0",
             ],
+            'rmb2ngn' => [
+                'rate' => SystemConfig::where('name', 'rmb2ngn_rate')->first()->value,
+                'charge' => SystemConfig::where('name', 'rmb2ngn_charge')->first()->value,
+                'title' => 'RMB to NGN',
+                'id' => 'rmb2ngn'
+            ],
+            'ngn2rmb' => [
+                'rate' => SystemConfig::where('name', 'ngn2rmb_rate')->first()->value,
+                'charge' => SystemConfig::where('name', 'ngn2rmb_charge')->first()->value,
+                'title' => 'NGN to RMB',
+                'id' => 'ngn2rmb'
+            ],
             'stat' => [
                 "users" => [
                     "all" => User::where('id', '<>', 0)->get()->count(),

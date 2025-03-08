@@ -517,7 +517,7 @@ class AuthController extends Controller
                 "token" => $otp_token
             ]);
         } else {
-            OTPCodes::create([
+            OTPCodes::updateOrCreate([
                 "token" => $otp_token,
                 "destination" => $user->email,
                 "user_id" => $user->id,
@@ -544,5 +544,78 @@ class AuthController extends Controller
             'message' => 'otp Sent'
         ];
         return response($response, 200);
+    }
+
+    public function resetPIN(Request $request)
+    {
+        // validate the request...
+        $validator = Validator::make($request->all(), [
+            'pin' => ['required', 'string', 'size:4'],
+            'otp' => ['required', 'string',],
+            'password' => 'required|string|min:6',
+        ]);
+
+
+
+        if ($validator->fails()) {
+            return response(['errors' => $validator->errors(), "message" => $validator->errors()->first()], 422);
+        }
+
+        $user = auth('api')->user();
+
+        if (Hash::check($request->password, $user->password)) {
+
+
+            $otp = OTPCodes::where("user_id", $user->id)->first();
+
+            if ($otp->updated_at < Carbon::now()->subMinutes(60)) {
+                return response(['message' => 'Token Expired'], 200);
+            }
+            if ($otp && $otp->updated_at > Carbon::now()->subMinutes(60) && $otp->token == $request->otp) {
+                User::find($user->id)->update([
+                    'pin' => $request->pin
+                ]);
+                return response(["user" =>  User::find($user->id), "message" => "Pin set successfully"], 200);
+            } else {
+                $response = [
+                    'message' => "Token expired or not accepted "
+                ];
+                return response($response, 422);
+            }
+        } else {
+            return response(['errors' => ['Authentication failed'], 'message' => 'Authentication failed'], 429);
+        }
+    }
+
+    public function updatePIN(Request $request)
+    {
+        // validate the request...
+        $validator = Validator::make($request->all(), [
+            'pin' => ['required', 'string', 'size:4'],
+            'password' => 'required|string|min:6',
+        ]);
+
+
+
+        if ($validator->fails()) {
+            return response(['errors' => $validator->errors(), "message" => $validator->errors()->first()], 422);
+        }
+
+        $user = auth('api')->user();
+
+        if ($user->pin && !(Hash::check($request->current_pin ?? "", $user->pin))) {
+            return response(['errors' => ['Authentication failed'], 'message' => 'Wrong PIN or password provided.'], 429);
+        }
+
+        if (Hash::check($request->password, $user->password)) {
+            User::find($user->id)->update([
+                'pin' => $request->pin
+            ]);
+        } else {
+            return response(['errors' => ['Authentication failed'], 'message' => 'Wrong PIN or password provided.'], 429);
+        }
+
+
+        return response(["user" =>  User::find($user->id), "message" => "Pin set successfully"], 200);
     }
 }

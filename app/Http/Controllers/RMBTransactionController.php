@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\RMBWallet;
+use App\Models\SystemConfig;
 use App\Services\FCMService;
 use Illuminate\Http\Request;
 use App\Models\RMBPaymentType;
@@ -376,6 +377,14 @@ class RMBTransactionController extends Controller
 
         $transaction->update($form);
         $response = ["message" => 'Transaction rejected'];
+
+        $circulation_config = SystemConfig::where("name", "total_circulation")->first();
+
+        if ($circulation_config) {
+            $circulation_config->update([
+                "value" => $circulation_config->value - $transaction->amount
+            ]);
+        }
 
         try {
             FCMService::sendToID(

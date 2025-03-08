@@ -11,6 +11,7 @@ use App\Models\FundTransaction;
 use App\Models\WalletTransaction;
 use Laravel\Passport\HasApiTokens;
 use App\Models\UserFundBankAccount;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -41,7 +42,9 @@ class User extends Authenticatable
         'phone_verified_at',
         'api_token',
         'fcm',
-        'referrer'
+        'referrer',
+        'pin',
+        'gender',
     ];
 
     // create constant for user role
@@ -68,6 +71,11 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function setPinAttribute($value)
+    {
+        $this->attributes['pin'] = Hash::make($value);
+    }
 
     public function wallet(): HasOne
     {

@@ -2,7 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
+use App\Models\User;
+use App\Models\AppConfig;
+use App\Models\SystemConfig;
 use Illuminate\Http\Request;
+use App\Models\RMBPaymentType;
+use App\Models\RMBTransaction;
 use App\Models\RMBPaymentMethod;
 use Illuminate\Support\Facades\Validator;
 
@@ -122,7 +128,72 @@ class RMBPaymentMethodController extends Controller
             $method->logo = env('APP_URL') . $method->logo;
         }
 
-        return response(['payment_methods' => $payment_methods,], 200);
+        // return response(['payment_methods' => $payment_methods,], 200);
+
+        // return home data
+
+        $configs = AppConfig::all();
+        $sys_configs = SystemConfig::all();
+        $payment_methods = RMBPaymentMethod::where('status', 1)->get();
+
+        foreach ($payment_methods as $method) {
+            $method->logo = env('APP_URL') . $method->logo;
+        }
+
+        $circulation_config = SystemConfig::where("name", "total_circulation")->first();
+
+        if ($circulation_config) {
+            $circulation =  $circulation_config->value;
+        }
+
+        $incoming_config = SystemConfig::where("name", "total_incoming")->first();
+
+        if ($incoming_config) {
+            $incoming =  $incoming_config->value;
+        }
+
+        $data = [
+            'payment_methods' => $payment_methods,
+            'payment_types' => RMBPaymentType::where('status', 1)->get(),
+            'me' => $user,
+            'system_configs' =>  $sys_configs,
+            'app_configs' =>  $configs,
+            'board_data' => [
+                "total_available" =>  $circulation ?? "0",
+                "incoming" => $incoming ?? "0",
+            ],
+            'rmb2ngn' => [
+                'rate' => SystemConfig::where('name', 'rmb2ngn_rate')->first()->value,
+                'charge' => SystemConfig::where('name', 'rmb2ngn_charge')->first()->value,
+                'title' => 'RMB to NGN',
+                'id' => 'rmb2ngn'
+            ],
+            'ngn2rmb' => [
+                'rate' => SystemConfig::where('name', 'ngn2rmb_rate')->first()->value,
+                'charge' => SystemConfig::where('name', 'ngn2rmb_charge')->first()->value,
+                'title' => 'NGN to RMB',
+                'id' => 'ngn2rmb'
+            ],
+            'stat' => [
+                "users" => [
+                    "all" => User::where('id', '<>', 0)->get()->count(),
+                    "this_month" => User::whereMonth('created_at', Carbon::now()->month)->get()->count(),
+                    "last_month" => User::whereMonth('created_at', Carbon::now()->subMonth(1))->get()->count(),
+                ],
+                'rmb' => [
+                    'pending' => RMBTransaction::where("status", 0)->selectRaw('SUM(amount) as total_value')->value('total_value'),
+                    'pending_naira' => RMBTransaction::where("status", 0)->selectRaw('SUM(rate * amount) as total_value')->value('total_value'),
+                    'completed' => RMBTransaction::where("status", 1)->selectRaw('SUM(rate * amount) as total_value')->value('total_value'),
+                    'completed_naira' => RMBTransaction::where("status", 1)->selectRaw('SUM(amount) as total_value')->value('total_value'),
+                    'this_month' => RMBTransaction::whereMonth('created_at', Carbon::now()->month)->where("status", 1)->selectRaw('SUM(rate * amount) as total_value')->value('total_value'),
+                    'this_month_naira' => RMBTransaction::whereMonth('created_at', Carbon::now()->month)->where("status", 1)->selectRaw('SUM(amount) as total_value')->value('total_value'),
+                    'last_month' => RMBTransaction::whereMonth('created_at', Carbon::now()->month)->where("status", 1)->selectRaw('SUM(rate * amount) as total_value')->value('total_value'),
+                    'last_month_naira' => RMBTransaction::whereMonth('created_at', Carbon::now()->month)->where("status", 1)->selectRaw('SUM(amount) as total_value')->value('total_value'),
+                ],
+
+            ],
+        ];
+        return response($data, 200);
     }
 
     /**

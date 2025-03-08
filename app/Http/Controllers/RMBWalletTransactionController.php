@@ -74,6 +74,14 @@ class RMBWalletTransactionController extends Controller
             'status' => 1,
         ]);
 
+        $circulation_config = SystemConfig::where("name", "total_circulation")->first();
+
+        if ($circulation_config) {
+            $circulation_config->update([
+                "value" => $circulation_config->value + $request->amount + $charge
+            ]);
+        }
+
         try {
             FCMService::sendToID(
                 $user->id,
@@ -142,6 +150,14 @@ class RMBWalletTransactionController extends Controller
             'rate' => $rate,
             'status' => 1,
         ]);
+
+        $circulation_config = SystemConfig::where("name", "total_circulation")->first();
+
+        if ($circulation_config) {
+            $circulation_config->update([
+                "value" => $circulation_config->value - $request->amount
+            ]);
+        }
 
         try {
             FCMService::sendToID(

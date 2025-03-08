@@ -127,6 +127,10 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
         // reward
         Route::get('/rewards/claim', [RewardWalletController::class, 'claim']);
         Route::get('/rewards', [RewardWalletController::class, 'index']);
+
+        // AUTH
+        Route::patch('/auth/pin/update', [AuthController::class, 'updatePIN']);
+        Route::patch('/auth/pin/reset', [AuthController::class, 'resetPIN']);
     });
 
     // Admin
@@ -156,6 +160,8 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
             );
 
             Route::post('/rmb/method/rate/update', [RMBPaymentMethodController::class, 'updateRates']);
+
+            Route::post('/rmb/conversion/rate/update', [SystemConfigController::class, 'updateConversionRates']);
 
             Route::post('/board/update', [SystemConfigController::class, 'updateBoardData']);
         });
