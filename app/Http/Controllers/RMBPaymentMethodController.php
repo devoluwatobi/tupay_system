@@ -82,6 +82,7 @@ class RMBPaymentMethodController extends Controller
         $validator = Validator::make($request->all(), [
             'method_id' => 'required',
             'rate' => 'required',
+            'rmb_charge' => 'required',
             'charge' => 'required',
         ]);
 
@@ -120,6 +121,7 @@ class RMBPaymentMethodController extends Controller
         $method->update([
             'rate' => $request->rate,
             'charge' => $request->charge,
+            'rmb_charge' => $request->rmb_charge,
         ]);
 
         $payment_methods = RMBPaymentMethod::where('status', 1)->get();
