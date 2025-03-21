@@ -104,4 +104,83 @@ class AppConfigController extends Controller
 
         return response(["data" => $config, "message" => "Config Updated Successfully"], 200);
     }
+
+
+    public function appVersion()
+    {
+        $versionInfo = [
+            "android" => [
+                "version" => [
+                    "minimum" => "1.0.0",
+                    "latest" => "1.0.0",
+                ],
+                "download_url" => "https://play.google.com/store/apps/details?id=ng.tupay.tupay",
+                "status" => [
+                    "active" => true,
+                    "message" => [
+                        "en" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                        "es" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                    ],
+                ],
+            ],
+            "iOS" => [
+                "version" => [
+                    "minimum" => "1.0.0",
+                    "latest" => "1.0.0",
+                ],
+                "download_url" => "https://apps.apple.com/us/app/tupay/id6741597358?platform=iphone",
+                "status" => [
+                    "active" => true,
+                    "message" => [
+                        "en" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                        "es" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                    ],
+                ],
+            ],
+            "macOS" => [
+                "version" => [
+                    "minimum" => "1.0.0",
+                    "latest" => "1.0.0",
+                ],
+                "download_url" => "https://tupay.ng",
+                "status" => [
+                    "active" => false,
+                    "message" => [
+                        "en" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                        "es" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                    ],
+                ],
+            ],
+            "windows" => [
+                "version" => [
+                    "minimum" => "1.0.0",
+                    "latest" => "1.0.0",
+                ],
+                "download_url" => "https://tupay.ng",
+                "status" => [
+                    "active" => true,
+                    "message" => [
+                        "en" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                        "es" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                    ],
+                ],
+            ],
+            "linux" => [
+                "version" => [
+                    "minimum" => "1.0.0",
+                    "latest" => "1.0.0",
+                ],
+                "download_url" => "https://tupay.ng",
+                "status" => [
+                    "active" => false,
+                    "message" => [
+                        "en" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                        "es" => "Effortless Cross-Border Payments, Right at Your Fingertips.",
+                    ],
+                ],
+            ],
+        ];
+
+        return response($versionInfo, 200);
+    }
 }

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AppConfigController;
 use App\Http\Controllers\BankDetailsController;
 use App\Http\Controllers\RewardWalletController;
 use App\Http\Controllers\SystemConfigController;
@@ -57,6 +58,9 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
 
     Route::post('/safe-hook', [TupaySubAccountTransactionController::class, 'webhook']);
 
+
+    // version
+    Route::get('/app/config/version', [AppConfigController::class, 'appVersion']);
 
 
 
