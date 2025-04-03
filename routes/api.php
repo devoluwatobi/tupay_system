@@ -34,7 +34,7 @@ use App\Http\Controllers\TupaySubAccountTransactionController;
 |
 */
 
-Route::group(['middleware' => ['cors', 'json.response', 'ip']], function () {
+Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], function () {
 
     // Register
     Route::post('/register', [AuthController::class, 'register']);
@@ -71,7 +71,7 @@ Route::group(['middleware' => ['cors', 'json.response', 'ip']], function () {
 
 
     // MIDDLEWARE FOR AUTH APIS
-    Route::group(['middleware' => ['auth:api', 'user']], function () {
+    Route::group(['middleware' => ['auth:api', 'throttle:user']], function () {
 
 
         Route::group(['middleware' => ['throttle:money']], function () {
