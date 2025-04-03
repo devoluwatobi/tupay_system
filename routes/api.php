@@ -22,6 +22,7 @@ use App\Http\Controllers\RMBWalletTransactionController;
 use App\Http\Controllers\UtilityBillTransactionController;
 use App\Http\Controllers\TupaySubAccountTransactionController;
 
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -33,7 +34,7 @@ use App\Http\Controllers\TupaySubAccountTransactionController;
 |
 */
 
-Route::group(['middleware' => ['cors', 'json.response']], function () {
+Route::group(['middleware' => ['cors', 'json.response', 'ip']], function () {
 
     // Register
     Route::post('/register', [AuthController::class, 'register']);
@@ -58,19 +59,59 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
 
     Route::post('/safe-hook', [TupaySubAccountTransactionController::class, 'webhook']);
 
-
     // version
     Route::get('/app/config/version', [AppConfigController::class, 'appVersion']);
+
+    Route::get('/account/update-hook', [SafeSubAccountController::class, 'updateHook']);
+
+
+
+
 
 
 
     // MIDDLEWARE FOR AUTH APIS
-    Route::group(['middleware' => ['auth:api']], function () {
+    Route::group(['middleware' => ['auth:api', 'user']], function () {
+
+
+        Route::group(['middleware' => ['throttle:money']], function () {
+
+            // RMB
+            Route::post('/transaction/create', [RMBTransactionController::class, 'makeTransaction']);
+
+            Route::post('/buy-red-airtime', [UtilityBillTransactionController::class, 'buyVTAirtime']);
+
+            Route::post('/buy-red-data', [UtilityBillTransactionController::class, 'buyVTData']);
+
+            Route::post('/buy-red-cable', [UtilityBillTransactionController::class, 'buyVTCable']);
+
+            Route::post('/buy-red-electricity', [UtilityBillTransactionController::class, 'buyVTElectricity']);
+
+            Route::post('/fund-bet-account', [BettingTransactionController::class, 'fundBettingAccount']);
+
+            Route::post('/withdraw-wallet', [WalletTransactionController::class, 'withdraw']);
+
+            // reward
+            Route::get('/rewards/claim', [RewardWalletController::class, 'claim']);
+
+            // rmb-wallet
+            Route::post('/rmb-convert', [RMBWalletTransactionController::class, 'convert']);
+
+            Route::post('/rmb-topup', [RMBWalletTransactionController::class, 'topup']);
+
+            // verification
+            Route::post('/verification/initiate', [SafeVerificationController::class, 'initiate']);
+
+
+            // AUTH
+            Route::patch('/auth/pin/update', [AuthController::class, 'updatePIN']);
+            Route::patch('/auth/pin/reset', [AuthController::class, 'resetPIN']);
+        });
+
         // home
         Route::get('/home', [HomeController::class, 'index']);
 
-        // RMB
-        Route::post('/transaction/create', [RMBTransactionController::class, 'makeTransaction']);
+
         Route::post('/transaction/get', [RMBTransactionController::class, 'getTransaction']);
 
         // UTILITY
@@ -80,19 +121,19 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
         Route::get('/get-electric-types', [UtilityBillTransactionController::class, 'getElectricTypes']);
         Route::get('/get-network-list', [UtilityBillTransactionController::class, 'getNetworks']);
         Route::get('/get-data-list/{product}', [UtilityBillTransactionController::class, 'getRedDataList']);
-        Route::post('/buy-red-airtime', [UtilityBillTransactionController::class, 'buyVTAirtime']);
+
         Route::get('/get-red-data-list/{product}', [UtilityBillTransactionController::class, 'getVTDataList']);
-        Route::post('/buy-red-data', [UtilityBillTransactionController::class, 'buyVTData']);
+
         Route::get('/get-red-tv-list/{product}', [UtilityBillTransactionController::class, 'getVTTvPackages']);
-        Route::post('/buy-red-cable', [UtilityBillTransactionController::class, 'buyVTCable']);
+
         Route::post('/verify-red-meter', [UtilityBillTransactionController::class, 'verifyVTMeter']);
         Route::post('/verify-red-decoder', [UtilityBillTransactionController::class, 'verifyVTDecoder']);
-        Route::post('/buy-red-electricity', [UtilityBillTransactionController::class, 'buyVTElectricity']);
+
 
         // Betting
         Route::get('/get-bet-platforms', [BettingTransactionController::class, 'getBettingPlatforms']);
         Route::post('/verify-bet-account', [BettingTransactionController::class, 'verifyBettingAccount']);
-        Route::post('/fund-bet-account', [BettingTransactionController::class, 'fundBettingAccount']);
+
 
         // Banks
         // /get-banks
@@ -100,8 +141,7 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
         Route::post('/add-red-bank-account', [BankDetailsController::class, 'verifyCreateRedBillerAccount']);
         Route::get('/bank-account/remove/{id}', [BankDetailsController::class, 'removeBank']);
 
-        // withdrawal
-        Route::post('/withdraw-wallet', [WalletTransactionController::class, 'withdraw']);
+
 
         // transactions
         Route::get('/transactions', [HomeController::class, 'myTransactions']);
@@ -112,12 +152,8 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
         // profile
         Route::post('/profile/update', [AccountController::class, 'updateProfile']);
 
-        // rmb-wallet
-        Route::post('/rmb-convert', [RMBWalletTransactionController::class, 'convert']);
-        Route::post('/rmb-topup', [RMBWalletTransactionController::class, 'topup']);
 
         // verification
-        Route::post('/verification/initiate', [SafeVerificationController::class, 'initiate']);
         Route::post('/verification/validate', [SafeVerificationController::class, 'validateVerification']);
 
         // fund account
@@ -129,12 +165,7 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
         Route::get('/rmb-transaction/leaderboard', [RMBTransactionController::class, 'leaderboard']);
 
         // reward
-        Route::get('/rewards/claim', [RewardWalletController::class, 'claim']);
         Route::get('/rewards', [RewardWalletController::class, 'index']);
-
-        // AUTH
-        Route::patch('/auth/pin/update', [AuthController::class, 'updatePIN']);
-        Route::patch('/auth/pin/reset', [AuthController::class, 'resetPIN']);
     });
 
     // Admin
@@ -168,6 +199,10 @@ Route::group(['middleware' => ['cors', 'json.response']], function () {
             Route::post('/rmb/conversion/rate/update', [SystemConfigController::class, 'updateConversionRates']);
 
             Route::post('/board/update', [SystemConfigController::class, 'updateBoardData']);
+
+
+            // Push Notifications
+            Route::post('/notifications/push/send', [HomeController::class, 'sendPushToUsers']);
         });
     });
 });
