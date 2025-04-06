@@ -67,7 +67,7 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
     Route::group(['middleware' => ['auth:api', 'throttle:user']], function () {
 
 
-        Route::group(['middleware' => ['throttle:money']], function () {
+        Route::group(['middleware' => ['throttle:money', 'restrict.suspended']], function () {
 
             // RMB
             Route::post('/transaction/create', [RMBTransactionController::class, 'makeTransaction']);
@@ -166,7 +166,7 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
 
         Route::post('/login', [AuthController::class, 'adminLogin']);
 
-        Route::group(['middleware' => ['auth:api', 'block_admin_ip']], function () {
+        Route::group(['middleware' => ['auth:api', 'block_admin_ip', 'restrict.suspended']], function () {
             // home
             Route::get('/home', [HomeController::class, 'adminIndex']);
 

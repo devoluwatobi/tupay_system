@@ -11,6 +11,7 @@ use App\Http\Middleware\BlockAdminIPMiddleware;
 use App\Http\Middleware\CustomThrottleRequests;
 use Illuminate\Http\Middleware\SetCacheHeaders;
 use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\RestrictSuspendedAccount;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'custom.throttle' => CustomThrottleRequests::class,
             'block_ip' => BlockIPMiddleware::class,
             'block_admin_ip' => BlockAdminIPMiddleware::class,
+        'restrict.suspended' => RestrictSuspendedAccount::class,
             \Laravel\Passport\Http\Middleware\CheckClientCredentials::class,
         ]);
 
