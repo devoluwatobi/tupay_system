@@ -196,6 +196,10 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
 
             // Push Notifications
             Route::post('/notifications/push/send', [HomeController::class, 'sendPushToUsers']);
+
+            // Account STatus
+            Route::post('/deactivate-account', [AuthController::class, 'deactivateAccount']);
+            Route::post('/activate-account', [AuthController::class, 'activateAccount']);
         });
     });
 });

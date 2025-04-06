@@ -618,4 +618,78 @@ class AuthController extends Controller
 
         return response(["user" =>  User::find($user->id), "message" => "Pin set successfully"], 200);
     }
+
+    public function deactivateAccount(Request $request)
+    {
+        $user = auth('api')->user();
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|max:255',
+            'phone' => 'required|string|max:15',
+            'user_id' => 'required|integer',
+        ]);
+
+        //Customer = 0, Staff = 0, Super Admin = 2
+        if ($validator->fails()) {
+            return response(['errors' => $validator->errors()->all()], 422);
+        }
+
+        if ($user->role < 1) {
+            $response = ["error" => true, "message" => "You dont have permission to perform this action"];
+            return response($response, 422);
+        }
+
+        $email_owner = User::where('email', $request->email)->first();
+        $phone_owner = User::where('phone', $request->phone)->first();
+
+
+
+        if (!$email_owner || !$phone_owner || $email_owner->id != $phone_owner->id) {
+            $response = ["message" => "Invalid Credentials"];
+            return response($response, 422);
+        }
+
+
+        $user = User::where("id", $request->user_id)->update(["status" => 0]);
+        $response = [
+            'message' => 'Account Deactivated'
+        ];
+        return response($response, 200);
+    }
+
+    public function activateAccount(Request $request)
+    {
+        $user = auth('api')->user();
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|max:255',
+            'phone' => 'required|string|max:15',
+            'user_id' => 'required|integer',
+        ]);
+
+        //Customer = 0, Staff = 0, Super Admin = 2
+        if ($validator->fails()) {
+            return response(['errors' => $validator->errors()->all()], 422);
+        }
+
+        if ($user->role < 1) {
+            $response = ["error" => true, "message" => "You dont' have permission to perform this action"];
+            return response($response, 422);
+        }
+
+        $email_owner = User::where('email', $request->email)->first();
+        $phone_owner = User::where('phone', $request->phone)->first();
+
+
+
+        if (!$email_owner || !$phone_owner || $email_owner->id != $phone_owner->id) {
+            $response = ["message" => "Invalid Credentials"];
+            return response($response, 422);
+        }
+
+
+        $user = User::where("id", $request->user_id)->update(["status" => 1]);
+        $response = [
+            'message' => 'Account Activated'
+        ];
+        return response($response, 200);
+    }
 }

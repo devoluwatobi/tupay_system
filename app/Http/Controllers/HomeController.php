@@ -280,8 +280,6 @@ class HomeController extends Controller
     }
 
 
-
-
     public function oldTransactions(Request $request)
     {
         $startDate = Carbon::now()->subDays(1)->startOfDay();
