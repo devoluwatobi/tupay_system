@@ -147,8 +147,6 @@ class BankDetailsController extends Controller
             $similar = areNamesSimilar($bankname, $user->last_name . " " . $user->first_name);
 
 
-            // check if firstname and lastname matches either firstname or lastname of user
-            // if (strtolower($userFirstName) == $firstname || strtolower($userLastName) == $lastname || strtolower($userFirstName) == $lastname || strtolower($userLastName) == $firstname)
             if ($similar || true) {
 
                 // check if user has existing bank details

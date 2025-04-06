@@ -54,7 +54,6 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
 
     Route::post('/admin-login', [AuthController::class, 'adminLogin']);
 
-
     // Safehook
 
     Route::post('/safe-hook', [TupaySubAccountTransactionController::class, 'webhook']);
@@ -63,12 +62,6 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
     Route::get('/app/config/version', [AppConfigController::class, 'appVersion']);
 
     Route::get('/account/update-hook', [SafeSubAccountController::class, 'updateHook']);
-
-
-
-
-
-
 
     // MIDDLEWARE FOR AUTH APIS
     Route::group(['middleware' => ['auth:api', 'throttle:user']], function () {
@@ -173,7 +166,7 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
 
         Route::post('/login', [AuthController::class, 'adminLogin']);
 
-        Route::group(['middleware' => ['auth:api']], function () {
+        Route::group(['middleware' => ['auth:api', 'block_admin_ip']], function () {
             // home
             Route::get('/home', [HomeController::class, 'adminIndex']);
 

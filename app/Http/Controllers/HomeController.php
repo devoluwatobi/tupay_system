@@ -2,22 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Utility;
 use App\Models\AppConfig;
+use App\Models\RMBWallet;
+use App\Models\SystemConfig;
+use App\Services\FCMService;
 use Illuminate\Http\Request;
 use App\Models\RMBPaymentType;
 use App\Models\RMBTransaction;
 use App\Models\RMBPaymentMethod;
 use App\Models\WalletTransaction;
 use App\Models\BettingTransaction;
-use App\Models\RMBWallet;
+use Illuminate\Support\Facades\Log;
 use App\Models\RMBWalletTransaction;
-use App\Models\SystemConfig;
-use App\Models\TupaySubAccountTransaction;
 use App\Models\UtilityBillTransaction;
+use Illuminate\Support\Facades\Validator;
+use App\Models\TupaySubAccountTransaction;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 if (!function_exists('hideEmailAddress')) {
     /**
@@ -274,11 +279,15 @@ class HomeController extends Controller
         return response($transactions, 200);
     }
 
-    public function oldTransactions()
+    public function oldTransactionsX()
     {
 
         $walData = WalletTransaction::where('status', '<>', 0)->get()->sortBy('created_at');
         $rmb = RMBTransaction::where('status', '<>', 0)->get()->sortBy('created_at');
+        $betData = BettingTransaction::where('status', '<>', 0)->get()->sortByDesc('created_at');
+        $utiData = UtilityBillTransaction::where('status', '<>', 0)->get()->sortByDesc('created_at');
+        $rmb_trx = RMBWalletTransaction::where('status', '<>', 0)->get()->sortByDesc('created_at');
+        $fund = TupaySubAccountTransaction::where('status', '<>', 0)->get()->sortByDesc('created_at');
 
 
         foreach ($walData as $walletTransaction) {
@@ -386,6 +395,216 @@ class HomeController extends Controller
             return $b['created_at'] <=> $a['created_at'];
         });
         return response($transactions, 200);
+    }
+
+    public function oldTransactions(Request $request)
+    {
+        $perPage = request('per_page', 10);
+        $page = request('page', 1);
+
+        function getTransactionStatus($statusCode)
+        {
+            $statuses = [
+                0 => ['status' => 'Pending', 'color' => 'EE7541'],
+                1 => ['status' => 'Completed', 'color' => '2F949A'],
+                2 => ['status' => 'Failed', 'color' => 'FF3B30'],
+                3 => ['status' => 'Cancelled', 'color' => '4A36C2'],
+                4 => ['status' => 'Processing', 'color' => 'EE7541'],
+            ];
+
+            return $statuses[$statusCode] ?? ['status' => 'Pending', 'color' => '0160E1'];
+        }
+
+
+        $walData = WalletTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $rmb = RMBTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $betData = BettingTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $utiData = UtilityBillTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $rmb_trx = RMBWalletTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $fund = TupaySubAccountTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+
+
+        $wallTrans = [];
+        $rmbTrans = [];
+        $betTrans = [];
+        $billTrans = [];
+        $fundTrx = [];
+
+        foreach ($walData as $walletTransaction) {
+
+
+            // fill up trx
+            $transaction = $walletTransaction;
+            $transaction->status = getTransactionStatus($walletTransaction->status)['status'];
+
+
+
+            $wallTrans[] = [
+                'id' => $walletTransaction->id,
+                'title' => "Withdrawal",
+                'type' => 'wallet',
+                'sub_type_id' => 0,
+                'icon' => env('APP_URL') . "/images/services/withdraw.png",
+                'amount' => number_format((float) $walletTransaction->amount, 2),
+                'status' =>  getTransactionStatus($walletTransaction->status)['status'],
+                'color' => getTransactionStatus($walletTransaction->status)['color'],
+                'created_at' => $walletTransaction->created_at,
+                'updated_at' => $walletTransaction->created_at,
+                'trx' => $transaction,
+            ];
+        }
+
+        foreach ($rmb as $rmbTransaction) {
+
+
+            $method =  RMBPaymentMethod::where("id", $rmbTransaction->r_m_b_payment_method_id)->first();
+
+
+            // fill up trx
+            $rmbTransaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction = $rmbTransaction;
+            // $transaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction->status = getTransactionStatus($rmbTransaction->status)['status'];;
+
+            $rmbTrans[] = [
+                'id' => $rmbTransaction->id,
+                'title' => $rmbTransaction->r_m_b_payment_method_title . ($rmbTransaction->recipient_name ? ' (' . $rmbTransaction->recipient_name . ')' : ''),
+                'type' => 'rmb-' . $rmbTransaction->r_m_b_payment_method_title,
+                'sub_type_id' => $rmbTransaction->id,
+                'icon' => env('APP_URL') . $method->logo,
+                'currency' => "CN¥",
+                'amount' => number_format($rmbTransaction->amount, 2),
+                'status' => getTransactionStatus($rmbTransaction->status)['status'],
+                'color' => getTransactionStatus($rmbTransaction->status)['color'],
+                'created_at' => $rmbTransaction->created_at,
+                'updated_at' => $rmbTransaction->updated_at,
+                'trx' => $transaction,
+            ];
+        }
+
+        foreach ($betData as $betTransaction) {
+
+            // fill up trx
+            $transaction = $betTransaction;
+            $transaction->status = getTransactionStatus($betTransaction->status)['status'];
+
+            $betTrans[] = [
+                'id' => $betTransaction->id,
+                'title' => $betTransaction->product,
+                'type' => 'bet',
+                'sub_type_id' => $betTransaction->id,
+                // 'icon' => "https://res.cloudinary.com/db3c1repq/image/upload/v1713497804/_1baa1896-2b36-44f9-8cd4-b71dcfc2efae_ghvd6j.jpg",
+                'icon' => env('APP_URL') . "/images/services/bet.png",
+                'amount' => number_format($betTransaction->amount, 2),
+                'status' => getTransactionStatus($betTransaction->status)['status'],
+                'color' => getTransactionStatus($betTransaction->status)['color'],
+                'created_at' => $betTransaction->created_at,
+                'updated_at' => $betTransaction->updated_at,
+                'trx' => $transaction,
+            ];
+        }
+
+        foreach ($rmb_trx as $rmbTransaction) {
+
+
+            $method =  RMBPaymentMethod::where("id", $rmbTransaction->r_m_b_payment_method_id)->first();
+
+
+            // fill up trx
+            $rmbTransaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction = $rmbTransaction;
+            // $transaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction->status = getTransactionStatus($rmbTransaction->status)['status'];
+            $rmbTrans[] = [
+                'id' => $rmbTransaction->id,
+                'title' => "RMB Wallet " . ($rmbTransaction->type == 1 ? "Top-up" : "Withdrawal"),
+                'type' => $rmbTransaction->type == 1 ? 'topup' : 'convert',
+                'sub_type_id' => $rmbTransaction->id,
+                'icon' => env('APP_URL') . '/images/services/rmb_' . ($rmbTransaction->type == 1 ? 'top_up' : 'withdrawal') . '.png',
+                'currency' => "CN¥",
+                'amount' => number_format($rmbTransaction->amount, 2),
+                'status' =>  getTransactionStatus($rmbTransaction->status)['status'],
+                'color' => getTransactionStatus($rmbTransaction->status)['color'],
+                'created_at' => $rmbTransaction->created_at,
+                'updated_at' => $rmbTransaction->updated_at,
+                'trx' => $transaction,
+            ];
+        }
+
+        foreach ($utiData as $billTransaction) {
+            // $utility = Utility::where('id', $billTransaction->utility_id)->first();
+
+
+            // fill up trx
+            $transaction = $billTransaction;
+            $transaction->service_icon = env('APP_URL') . $billTransaction->service_icon;
+            $transaction->status = getTransactionStatus($billTransaction->status)['status'];
+            $transaction->utility_name = $billTransaction->type;
+            $transaction->utility_prefix = $billTransaction->type;
+
+            $billTrans[] = [
+                'id' => $billTransaction->id,
+                'title' => $billTransaction->type,
+                'type' => 'bill',
+                'sub_type_id' => $billTransaction->utility_id,
+                'icon' => $transaction->service_icon,
+                'amount' => $billTransaction->amount,
+                'status' => getTransactionStatus($billTransaction->status)['status'],
+                'color' => getTransactionStatus($billTransaction->status)['color'],
+                'created_at' => $billTransaction->created_at,
+                'updated_at' => $billTransaction->created_at,
+                'trx' => $transaction,
+            ];
+        }
+
+        foreach ($fund as $transaction) {
+
+            // $transaction->proofs = json_decode($rmbTransaction->proofs);
+            $transaction->status = getTransactionStatus($transaction->status)['status'];
+            $fundTrx[] = [
+                'id' => $transaction->id,
+                'title' => "Wallet Top-Up",
+                'type' => 'fund',
+                'sub_type_id' => 0,
+                'icon' => env('APP_URL') . "/images/services/fund.png",
+                'currency' => "₦",
+                'amount' => number_format($transaction->settlement, 2),
+                'status' => getTransactionStatus($transaction->status)['status'],
+                'color' => getTransactionStatus($transaction->status)['color'],
+                'created_at' => $transaction->created_at,
+                'updated_at' => $transaction->updated_at,
+                'trx' => $transaction,
+            ];
+        }
+
+
+
+        $transactions = collect()
+            ->merge(($wallTrans))
+            ->merge(($rmbTrans))
+            ->merge(($betTrans))
+            ->merge(($billTrans))
+            ->merge(($fundTrx));
+
+
+        $transactions = $transactions->sortByDesc('created_at')->values();
+
+        // sort by latest created at
+        // Paginate manually
+
+        $total = $transactions->count();
+
+        $transactionsArray = array_values($transactions->toArray());
+
+        $paginatedTransactions = new LengthAwarePaginator(
+            $transactionsArray,
+            $total,
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return response($paginatedTransactions, 200);
     }
 
     public function myTransactions()
@@ -1086,5 +1305,55 @@ class HomeController extends Controller
             "incoming" => $incoming ?? "0",
             "requests" => $rmb,
         ], 200);
+    }
+
+    public function sendPushToUsers(Request $request)
+    {
+        $user = auth('api')->user();
+        if ($user->role < 1) {
+            return response(['message' => ['Permission denied.']], 422);
+        }
+        $validator = Validator::make($request->all(), [
+            'title' => 'required',
+            'description' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            // get summary
+            $errors = $validator->errors();
+            $errorMessages = [];
+
+            foreach ($errors->all() as $message) {
+                $errorMessages[] = $message;
+            }
+
+            $summary = implode(" \n", $errorMessages);
+
+            return response(
+                [
+                    'error' => true,
+                    'message' => $summary
+                ],
+                422
+            );
+        }
+
+        try {
+            FCMService::sendToAllUsers(
+
+                [
+                    'title' => $request->title,
+                    'body' => $request->description,
+                ]
+            );
+        } //catch exception
+        catch (Exception $e) {
+            Log::error('Message: ' . $e->getMessage());
+            return response(['message' => 'Push Notification Failed => ' .  $e->getMessage()], 422);
+        }
+
+
+        // return response with message and data
+        return response(['message' => 'Push Sent successfully'], 200);
     }
 }

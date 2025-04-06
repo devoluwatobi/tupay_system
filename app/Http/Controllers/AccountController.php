@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use App\Models\DeleteAccountRequest;
+use App\Models\SafeVerification;
+use App\Models\TupaySubAccount;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -43,6 +45,14 @@ class AccountController extends Controller
         }
 
         $form = $request->all();
+
+        $sub_account = TupaySubAccount::where('user_id', $user->id)->first();
+        $verified = SafeVerification::where('user_id', $user->id)->first();
+
+        if ($sub_account || $verified) {
+            $form['first_name'] = $user->first_name;
+            $form['last_name'] = $user->last_name;
+        }
 
         if ($request->phone) {
             if (!str_contains($request->phone, '+')) {

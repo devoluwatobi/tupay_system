@@ -483,6 +483,13 @@ class SafeHavenService
                 ]
             );
 
+            $user->update(
+                [
+                    'first_name' => $server_output->data->subAccountDetails->firstName,
+                    'last_name' => $server_output->data->subAccountDetails->lastName,
+                ]
+            );
+
             return true;
         }
         return false;
