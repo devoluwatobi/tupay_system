@@ -279,128 +279,38 @@ class HomeController extends Controller
         return response($transactions, 200);
     }
 
-    public function oldTransactionsX()
-    {
-
-        $walData = WalletTransaction::where('status', '<>', 0)->get()->sortBy('created_at');
-        $rmb = RMBTransaction::where('status', '<>', 0)->get()->sortBy('created_at');
-        $betData = BettingTransaction::where('status', '<>', 0)->get()->sortByDesc('created_at');
-        $utiData = UtilityBillTransaction::where('status', '<>', 0)->get()->sortByDesc('created_at');
-        $rmb_trx = RMBWalletTransaction::where('status', '<>', 0)->get()->sortByDesc('created_at');
-        $fund = TupaySubAccountTransaction::where('status', '<>', 0)->get()->sortByDesc('created_at');
 
 
-        foreach ($walData as $walletTransaction) {
-            switch ($walletTransaction->status) {
-                case 0:
-                    $status = 'Pending';
-                    $color = 'EE7541';
-                    break;
-                case 1:
-                    $status = 'Completed';
-                    $color = '2F949A';
-                    break;
-                case 2:
-                    $status = 'Failed';
-                    $color = 'FF3B30';
-                    break;
-                case 3:
-                    $status = 'Cancelled';
-                    $color = '4A36C2';
-                    break;
-                default:
-                    $status = 'Pending';
-                    $color = '0160E1';
-                    break;
-            }
-
-            // fill up trx
-            $transaction = $walletTransaction;
-            $transaction->status = $status;
-
-            $wallTrans[] = [
-                'id' => $walletTransaction->id,
-                'title' => "Withdrawal",
-                'type' => 'wallet',
-                'sub_type_id' => 0,
-                'icon' => env('APP_URL') . "/images/services/withdraw.png",
-                'amount' => number_format((float) $walletTransaction->amount, 2),
-                'status' => $status,
-                'color' => $color,
-                'created_at' => $walletTransaction->created_at,
-                'updated_at' => $walletTransaction->created_at,
-                'trx' => $transaction,
-            ];
-        }
-
-        foreach ($rmb as $rmbTransaction) {
-            switch ($rmbTransaction->status) {
-                case 0:
-                    $status = 'Pending';
-                    $color = 'EE7541';
-                    break;
-                case 1:
-                    $status = 'Completed';
-                    $color = '2F949A';
-                    break;
-                case 2:
-                    $status = 'Failed';
-                    $color = 'FF3B30';
-                    break;
-                case 3:
-                    $status = 'Cancelled';
-                    $color = '4A36C2';
-                    break;
-                default:
-                    $status = 'Pending';
-                    $color = '0160E1';
-                    break;
-            }
-
-            $method =  RMBPaymentMethod::where("id", $rmbTransaction->r_m_b_payment_method_id)->first();
-
-
-            // fill up trx
-            $rmbTransaction->proofs = json_decode($rmbTransaction->proofs);
-            $transaction = $rmbTransaction;
-            // $transaction->proofs = json_decode($rmbTransaction->proofs);
-            $transaction->status = $status;
-            $rmbTrans[] = [
-                'id' => $rmbTransaction->id,
-                'title' => $rmbTransaction->r_m_b_payment_method_title . ($rmbTransaction->recipient_name ? ' (' . $rmbTransaction->recipient_name . ')' : ''),
-                'type' => 'rmb-' . $rmbTransaction->r_m_b_payment_method_title,
-                'sub_type_id' => $rmbTransaction->id,
-                'icon' => env('APP_URL') . $method->logo,
-                'currency' => "CN¥",
-                'amount' => number_format($rmbTransaction->amount, 2),
-                'status' => $status,
-                'color' => $color,
-                'created_at' => $rmbTransaction->created_at,
-                'updated_at' => $rmbTransaction->updated_at,
-                'trx' => $transaction,
-            ];
-        }
-
-        $transactions = array_merge(
-            $wallTrans ?? [],
-            $rmbTrans ?? []
-        );
-
-        if (count($transactions) < 1) {
-            return response([], 200);
-        }
-
-        // sort by latest created at
-        usort($transactions, function ($a, $b) {
-            return $b['created_at'] <=> $a['created_at'];
-        });
-        return response($transactions, 200);
-    }
 
     public function oldTransactions(Request $request)
     {
-        $perPage = request('per_page', 10);
-        $page = request('page', 1);
+        $startDate = Carbon::now()->subDays(1)->startOfDay();
+        $endDate = Carbon::now()->endOfDay();
+
+        if ($request->filled('start_date')) {
+            $startDate = Carbon::parse($request->start_date)->startOfDay();
+        }
+        if ($request->filled('end_date')) {
+            $endDate = Carbon::parse($request->end_date)->endOfDay();
+        }
+        if ($endDate->lt($startDate)) {
+            return response()->json(['message' => 'The end_date cannot be before the start_date.'], 400);
+        }
+
+
+        $walData = WalletTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
+        $rmb = RMBTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
+        $betData = BettingTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
+        $utiData = UtilityBillTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
+        $rmb_trx = RMBWalletTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
+        $fund = TupaySubAccountTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
+
+
+        $wallTrans = [];
+        $rmbTrans = [];
+        $betTrans = [];
+        $billTrans = [];
+        $fundTrx = [];
 
         function getTransactionStatus($statusCode)
         {
@@ -414,21 +324,6 @@ class HomeController extends Controller
 
             return $statuses[$statusCode] ?? ['status' => 'Pending', 'color' => '0160E1'];
         }
-
-
-        $walData = WalletTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
-        $rmb = RMBTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
-        $betData = BettingTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
-        $utiData = UtilityBillTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
-        $rmb_trx = RMBWalletTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
-        $fund = TupaySubAccountTransaction::where('status', '<>', 0)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
-
-
-        $wallTrans = [];
-        $rmbTrans = [];
-        $betTrans = [];
-        $billTrans = [];
-        $fundTrx = [];
 
         foreach ($walData as $walletTransaction) {
 
@@ -592,19 +487,19 @@ class HomeController extends Controller
         // sort by latest created at
         // Paginate manually
 
-        $total = $transactions->count();
+        // $total = $transactions->count();
 
-        $transactionsArray = array_values($transactions->toArray());
+        // $transactionsArray = array_values($transactions->toArray());
 
-        $paginatedTransactions = new LengthAwarePaginator(
-            $transactionsArray,
-            $total,
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
+        // $paginatedTransactions = new LengthAwarePaginator(
+        //     $transactionsArray,
+        //     $total,
+        //     $perPage,
+        //     $page,
+        //     ['path' => request()->url(), 'query' => request()->query()]
+        // );
 
-        return response($paginatedTransactions, 200);
+        return response($transactions, 200);
     }
 
     public function myTransactions()
