@@ -13,25 +13,16 @@ if (!function_exists('areNamesSimilar')) {
     /**
      * Check if two names have at least two common words.
      *
-     * @param string $name1
-     * @param string $name2
+     * @param string $full_name
+     * @param string $first_name
+     * @param string $last_name
      * @return bool
      */
-    function areNamesSimilar($name1, $name2)
+
+    function isNamesSimilar($full_name, $first_name, $last_name)
     {
-        // Remove special characters and convert to lowercase
-        $name1 = strtolower(preg_replace("/[^a-z\s]/", "", $name1));
-        $name2 = strtolower(preg_replace("/[^a-z\s]/", "", $name2));
-
-        // Split the names into arrays of words
-        $words1 = explode(' ', $name1);
-        $words2 = explode(' ', $name2);
-
-        // Find the common words
-        $commonWords = array_intersect($words1, $words2);
-
-        // Return true if there are at least 2 common words
-        return count($commonWords) >= 2;
+        // Return true if there are at least 1 common words
+        return (str_contains(strtolower($full_name), strtolower($first_name))) && (str_contains(strtolower($full_name), strtolower($last_name)));
     }
 }
 
@@ -111,12 +102,13 @@ class BankDetailsController extends Controller
                 422
             );
         }
+
         $user = auth('api')->user();
 
         $bank = BankDetails::where('user_id', $user->id)->where('account_number', $request->account_no)->where('bank', $request->bank_code)->first();
 
         if ($bank) {
-            return response(['status' => false, 'message' => 'Bank account already exixt on account'], 422);
+            return response(['status' => false, 'message' => 'Bank account already exist on account'], 422);
         }
 
 
@@ -132,22 +124,12 @@ class BankDetailsController extends Controller
             $bankname = $data['details']['account_name'];
 
             $bankname = str_replace(",", "", $bankname);
-            // $bankname = explode(' ', $bankname);
-            // $firstname = $bankname[0];
-            // $lastname = $bankname[1];
-
-            // // convert first name and last name to lowercase
-            // $firstname = strtolower($firstname);
-            // $lastname = strtolower($lastname);
-
-            // $userFirstName = $user->first_name;
-            // $userLastName = $user->last_name;
 
 
-            $similar = areNamesSimilar($bankname, $user->last_name . " " . $user->first_name);
+            $similar = isNamesSimilar($bankname, $user->last_name, $user->first_name);
 
 
-            if ($similar || true) {
+            if ($similar) {
 
                 // check if user has existing bank details
 
