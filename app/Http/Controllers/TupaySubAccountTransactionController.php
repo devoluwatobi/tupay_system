@@ -14,6 +14,23 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use App\Models\TupaySubAccountTransaction;
 
+if (!function_exists('isNamesSimilar')) {
+    /**
+     * Check if two names have at least two common words.
+     *
+     * @param string $full_name
+     * @param string $first_name
+     * @param string $last_name
+     * @return bool
+     */
+
+    function isNamesSimilar($full_name, $first_name, $last_name)
+    {
+        // Return true if there are at least 1 common words
+        return (str_contains(strtolower($full_name), strtolower($first_name))) && (str_contains(strtolower($full_name), strtolower($last_name)));
+    }
+}
+
 class TupaySubAccountTransactionController extends Controller
 {
 
@@ -137,9 +154,17 @@ class TupaySubAccountTransactionController extends Controller
 
         $walletTransaction->save();
 
-
-
         $walletTransaction->save();
+
+        if (!isNamesSimilar($request["data"]["debitAccountName"], $user->first_name, $user->last_name)) {
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) funded account with a bank that is not theirs. Please do check."
+            ]);
+        }
 
         $amount = number_format($request["data"]['amount'], 2);
 

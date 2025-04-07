@@ -18,6 +18,23 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
+if (!function_exists('isNamesSimilar')) {
+    /**
+     * Check if two names have at least two common words.
+     *
+     * @param string $full_name
+     * @param string $first_name
+     * @param string $last_name
+     * @return bool
+     */
+
+    function isNamesSimilar($full_name, $first_name, $last_name)
+    {
+        // Return true if there are at least 1 common words
+        return (str_contains(strtolower($full_name), strtolower($first_name))) && (str_contains(strtolower($full_name), strtolower($last_name)));
+    }
+}
+
 class WalletTransactionController extends Controller
 {
 
@@ -72,6 +89,17 @@ class WalletTransactionController extends Controller
             return response(['error' => 'You have no bank details', 'message' => "User's bank does not exist, please add or update bank to continue"], 400);
         }
 
+        if (!isNamesSimilar($bankAccount->account_name, $user->first_name, $user->last_name)) {
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) trying to withdraw to a third party. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+        }
         // check if the user has enough money to withdraw
         if ($wallet->balance < $request->amount) {
             return response(['message' => 'You do not have enough money in your wallet to withdraw'], 422);

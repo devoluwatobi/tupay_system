@@ -12,6 +12,23 @@ use App\Models\UserFundBankAccount;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
+if (!function_exists('isNamesSimilar')) {
+    /**
+     * Check if two names have at least two common words.
+     *
+     * @param string $full_name
+     * @param string $first_name
+     * @param string $last_name
+     * @return bool
+     */
+
+    function isNamesSimilar($full_name, $first_name, $last_name)
+    {
+        // Return true if there are at least 1 common words
+        return (str_contains(strtolower($full_name), strtolower($first_name))) && (str_contains(strtolower($full_name), strtolower($last_name)));
+    }
+}
+
 class FundTransactionController extends Controller
 {
     public function webhook(Request $request)
@@ -122,6 +139,16 @@ class FundTransactionController extends Controller
         $walletTransaction->payer_account_name = $data["details"]["payer"]['account_name'];
         $walletTransaction->payer_account_no = $data["details"]["payer"]['account_no'];
         $walletTransaction->payer_bank_name = $data["details"]["payer"]['bank_name'];
+
+        if (!isNamesSimilar($data["details"]["payer"]['account_name'], $user->first_name, $user->last_name)) {
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) funded account with a bank that is not theirs. Please do check."
+            ]);
+        }
 
 
 

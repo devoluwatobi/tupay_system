@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
-if (!function_exists('areNamesSimilar')) {
+if (!function_exists('isNamesSimilar')) {
     /**
      * Check if two names have at least two common words.
      *
