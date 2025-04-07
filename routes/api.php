@@ -206,6 +206,8 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
                 Route::controller(AccountController::class)->group(function () {
 
                     Route::get('{id}/statement', 'sendStatement');
+                    Route::get('{id}/audit', 'getAudit');
+                    Route::get('{id}/balance-reset', 'resetBalance');
                 });
             });
         });

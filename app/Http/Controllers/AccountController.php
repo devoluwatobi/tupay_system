@@ -233,6 +233,8 @@ class AccountController extends Controller
         $nin = Verification::where("type", "nin")->where("user_id", $user->id)->first();
         $user_wallet = Wallet::where("user_id", $user->id)->first();
         $user->balance = $user_wallet->balance;
+        // Handle RMB balance safely
+        $user->rmb_balance = $user->rmb ? $user->rmb->balance : 0;
         $user->photo = env('APP_URL') . $user->photo;
         $user->bvn_verification = $bvn && $bvn->verification_status == "Approved" ? 1 : 0;
         $user->nin_verification = $nin && $nin->verification_status == "Approved" ? 1 : 0;
@@ -259,12 +261,12 @@ class AccountController extends Controller
             return response($response, 422);
         }
 
-        $latestUsers = User::orderBy('created_at', 'desc')
+        $latestUsers = User::with(['wallet', 'rmb'])->orderBy('created_at', 'desc')
         ->take(100)
             ->get();
 
         // Get users that have phone numbers
-        $admins = User::where('role', '>', 0)->get();
+        $admins = User::with(['wallet', 'rmb'])->where('role', '>', 0)->get();
 
         $combinedUsers = $latestUsers->merge($admins);
         $uniqueUsers = $combinedUsers->unique('id');
@@ -275,6 +277,8 @@ class AccountController extends Controller
             $nin = Verification::where("type", "nin")->where("user_id", $user->id)->first();
             $user_wallet = Wallet::where("user_id", $user->id)->first();
             $user->balance = $user_wallet->balance;
+            // Handle RMB balance safely
+            $user->rmb_balance = $user->rmb ? $user->rmb->balance : 0;
             $user->photo = env('APP_URL') . $user->photo;
             $user->bvn_verification = $bvn && $bvn->verification_status == "Approved" ? 1 : 0;
             $user->nin_verification = $nin && $nin->verification_status == "Approved" ? 1 : 0;
@@ -308,7 +312,7 @@ class AccountController extends Controller
 
 
         // Perform the search
-        $users = User::where(function ($query) use ($search) {
+        $users = User::with(['wallet', 'rmb'])->where(function ($query) use ($search) {
             $query->where('first_name', 'like', '%' . $search . '%')->orWhere('last_name', 'like', '%' . $search . '%')->orWhere('username', 'like', '%' . $search . '%')
                 ->orWhere('email', 'like', '%' . $search . '%')->orWhere('phone', 'like', '%' . $search . '%');
         })->get();
@@ -328,6 +332,8 @@ class AccountController extends Controller
             $nin = Verification::where("type", "nin")->where("user_id", $user->id)->first();
             $user_wallet = Wallet::where("user_id", $user->id)->first();
             $user->balance = $user_wallet->balance;
+            // Handle RMB balance safely
+            $user->rmb_balance = $user->rmb ? $user->rmb->balance : 0;
             $user->photo = env('APP_URL') . $user->photo;
             $user->bvn_verification = $bvn && $bvn->verification_status == "Approved" ? 1 : 0;
             $user->nin_verification = $nin && $nin->verification_status == "Approved" ? 1 : 0;
@@ -346,7 +352,7 @@ class AccountController extends Controller
 
     public function sendStatement($id)
     {
-        $user = User::where("id", $id)->first();
+        $user = User::with(['wallet', 'rmb'])->where("id", $id)->first();
 
         if (!$user) {
             return response(['message' => 'User not found'], 422);
@@ -356,6 +362,38 @@ class AccountController extends Controller
 
         return response([
             "message" => "Statement sent to " . $user->email . " successfully"
+        ]);
+    }
+
+    public function getAudit($id)
+    {
+        $user = User::where("id", $id)->first();
+
+        if (!$user) {
+            return response(['message' => 'User not found'], 422);
+        }
+
+        WalletService::getAudit($id);
+
+        return response([
+            "message" => "Account Audited successfully",
+            "data" => WalletService::getAudit($id),
+        ]);
+    }
+
+    public function resetBalance($id)
+    {
+        $user = User::where("id", $id)->first();
+
+        if (!$user) {
+            return response(['message' => 'User not found'], 422);
+        }
+
+        WalletService::resetBalance($id);
+
+        return response([
+            "message" => "Account Audited successfully",
+            "data" => WalletService::getAudit($id),
         ]);
     }
 }

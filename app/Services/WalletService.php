@@ -12,11 +12,13 @@ use GuzzleHttp\RequestOptions;
 use App\Models\WalletTransaction;
 use App\Mail\AccountStatementMail;
 use App\Models\BettingTransaction;
+use App\Models\RewardWallet;
 use Illuminate\Support\Facades\Log;
 use App\Models\RMBWalletTransaction;
 use Illuminate\Support\Facades\Mail;
 use App\Models\UtilityBillTransaction;
 use App\Models\RewardWalletTransaction;
+use App\Models\RMBWallet;
 use Illuminate\Support\Facades\Storage;
 use App\Models\TupaySubAccountTransaction;
 
@@ -327,5 +329,39 @@ class WalletService
     public static function getBookBalance($id)
     {
         return self::bookBalance($id);
+    }
+
+    public static function getAudit($id)
+    {
+        $transactions = self::collectTransactionData($id);
+        $processed = self::processTransactions($transactions);
+        $processed['trxs'] = null;
+        return $processed;
+    }
+
+    public static function resetBalance($id)
+    {
+        $transactions = self::collectTransactionData($id);
+        $processed = self::processTransactions($transactions);
+
+        $ngn_wallet = Wallet::where("user_id", $id)->first();
+        $rmb_wallet = RMBWallet::where("user_id", $id)->first();
+        $reward_wallet = RewardWallet::where("user_id", $id)->first();
+
+        $ngn_wallet->update([
+            "balance" => $processed['balances']['ngn']
+        ]);
+
+        $rmb_wallet->update([
+            "balance" => $processed['balances']['rmb']
+        ]);
+
+        $reward_wallet->update([
+            "balance" => 0
+        ]);
+
+        $processed['trxs'] = null;
+
+        return $processed;
     }
 }
