@@ -201,6 +201,13 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
             // Account STatus
             Route::post('/deactivate-account', [AuthController::class, 'deactivateAccount']);
             Route::post('/activate-account', [AuthController::class, 'activateAccount']);
+
+            Route::prefix('account')->group(function () {  //otps routes
+                Route::controller(AccountController::class)->group(function () {
+
+                    Route::get('{id}/statement', 'sendStatement');
+                });
+            });
         });
     });
 });

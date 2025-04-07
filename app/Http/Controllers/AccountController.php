@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DeleteAccountRequest;
 use App\Models\SafeVerification;
 use App\Models\TupaySubAccount;
+use App\Services\WalletService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -341,5 +342,20 @@ class AccountController extends Controller
 
         // // return response with message and data
         return response($uniqueUsers, 200);
+    }
+
+    public function sendStatement($id)
+    {
+        $user = User::where("id", $id)->first();
+
+        if (!$user) {
+            return response(['message' => 'User not found'], 422);
+        }
+
+        WalletService::sendStatement($id);
+
+        return response([
+            "message" => "Statement sent to " . $user->email . " successfully"
+        ]);
     }
 }
