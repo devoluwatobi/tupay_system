@@ -175,6 +175,7 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
             Route::get('/old-transactions', [HomeController::class, 'oldTransactions']);
             Route::get('/transactions/users/{id}', [HomeController::class, 'allUserTransactions']);
 
+            Route::post('/board/update', [SystemConfigController::class, 'updateBoardData']);
 
 
             Route::get('/rmb-transaction/export', [RMBTransactionController::class, 'exportRMBTransactions']);
@@ -195,7 +196,7 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
 
             Route::post('/rmb/conversion/rate/update', [SystemConfigController::class, 'updateConversionRates']);
 
-            Route::post('/board/update', [SystemConfigController::class, 'updateBoardData']);
+            Route::post('/app-config/update', [AppConfigController::class, 'update']);
 
 
             // Push Notifications

@@ -102,7 +102,7 @@ class AppConfigController extends Controller
             'updated_by' => $user->id,
         ]);
 
-        return response(["data" => $config, "message" => "Config Updated Successfully"], 200);
+        return response(["data" => AppConfig::all(), "message" => "Config Updated Successfully"], 200);
     }
 
 
