@@ -175,6 +175,9 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
             Route::get('/old-transactions', [HomeController::class, 'oldTransactions']);
             Route::get('/transactions/users/{id}', [HomeController::class, 'allUserTransactions']);
 
+
+
+            Route::get('/rmb-transaction/export', [RMBTransactionController::class, 'exportRMBTransactions']);
             // RMB Review
             Route::post('/rmb-transaction/fail', [RMBTransactionController::class, 'fail']);
             Route::post('/rmb-transaction/approve', [RMBTransactionController::class, 'approve']);

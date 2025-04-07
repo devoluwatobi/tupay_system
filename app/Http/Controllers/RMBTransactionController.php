@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\RMBWallet;
+use Illuminate\Support\Str;
 use App\Models\SystemConfig;
 use App\Services\FCMService;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
 use App\Mail\RMBTransactionCreated;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use App\Services\RMBTransactionService;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
@@ -51,6 +54,13 @@ if (!function_exists('hideEmailAddress')) {
 
 class RMBTransactionController extends Controller
 {
+    protected $exportService;
+
+    public function __construct(RMBTransactionService $exportService)
+    {
+        $this->exportService = $exportService;
+    }
+
     public function makeTransaction(Request $request)
     {
         $user = auth('api')->user();
@@ -498,5 +508,23 @@ class RMBTransactionController extends Controller
         }
 
         return $monthlyLeaderboard;
+    }
+
+    public function exportRMBTransactions(Request $request)
+    {
+        try {
+            return $this->exportService->exportTransactions([
+                'start_date' => $request->input('start_date'),
+                'end_date' => $request->input('end_date'),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to generate export. Please try again later.'
+            ], 500);
+        }
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class RewardWalletTransaction extends Model
 {
@@ -28,5 +29,10 @@ class RewardWalletTransaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function paymentMethod(): HasOne
+    {
+        return $this->hasOne(RMBPaymentMethod::class, 'user_id');
     }
 }

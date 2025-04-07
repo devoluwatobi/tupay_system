@@ -16,6 +16,7 @@
         "laravel/passport": "^12.4",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
+        "maatwebsite/excel": "^3.1",
         "mailgun/mailgun-php": "^4.3",
         "symfony/http-client": "^7.2",
         "symfony/mailgun-mailer": "^7.2"
