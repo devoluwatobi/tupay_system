@@ -12,6 +12,7 @@ use App\Services\FCMService;
 use Illuminate\Http\Request;
 use App\Models\RMBPaymentType;
 use App\Models\RMBTransaction;
+use App\Services\WalletService;
 use App\Models\RMBPaymentMethod;
 use Illuminate\Support\Facades\DB;
 use App\Mail\RMBTransactionCreated;
@@ -55,7 +56,7 @@ class RMBTransactionController extends Controller
         $user = auth('api')->user();
 
         $validator = Validator::make($request->all(), [
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:50|max:2500000',
             'r_m_b_payment_method_id' => 'required',
             'r_m_b_payment_type_id' => 'required',
             // 'recipient_id' => 'required',
@@ -80,6 +81,25 @@ class RMBTransactionController extends Controller
                 ],
                 422
             );
+        }
+
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "message" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
         }
 
         $method =  RMBPaymentMethod::where("id", $request->r_m_b_payment_method_id)->first();

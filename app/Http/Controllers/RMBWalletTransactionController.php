@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use Exception;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\RMBWallet;
 use App\Models\SystemConfig;
 use App\Services\FCMService;
 use Illuminate\Http\Request;
+use App\Services\WalletService;
 use Illuminate\Support\Facades\Log;
 use App\Models\RMBWalletTransaction;
 use Illuminate\Support\Facades\Validator;
@@ -30,7 +32,7 @@ class RMBWalletTransactionController extends Controller
         $user = auth('api')->user();
 
         $validator = Validator::make($request->all(), [
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:10|max:2500000',
         ]);
 
         if ($validator->fails()) {
@@ -38,6 +40,26 @@ class RMBWalletTransactionController extends Controller
                 'error' => true,
                 'message' => implode("\n", $validator->errors()->all())
             ], 422);
+        }
+
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
         }
 
         $rate = SystemConfig::where('name', 'rmb2ngn_rate')->first()->value;
@@ -49,6 +71,8 @@ class RMBWalletTransactionController extends Controller
 
         $rmb_total = $request->amount + $charge;
         $ngn_total = $request->amount * $rate;
+
+
 
         if ($rmb_total > $rmb_wallet->balance) {
             $response = ['message' => "You don't have enough in your RMB wallet for this transaction. Please try funding your RMB wallet"];
@@ -107,7 +131,7 @@ class RMBWalletTransactionController extends Controller
         $user = auth('api')->user();
 
         $validator = Validator::make($request->all(), [
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:50|max:2500000',
         ]);
 
         if ($validator->fails()) {
@@ -115,6 +139,26 @@ class RMBWalletTransactionController extends Controller
                 'error' => true,
                 'message' => implode("\n", $validator->errors()->all())
             ], 422);
+        }
+
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
         }
 
         $rate = SystemConfig::where('name', 'ngn2rmb_rate')->first()->value;

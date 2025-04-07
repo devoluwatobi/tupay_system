@@ -186,6 +186,7 @@ Route::group(['middleware' => ['cors', 'json.response', 'throttle:ip']], functio
                 '/users',
                 [AccountController::class, 'usersList']
             );
+            Route::post('/search-users', [AccountController::class, 'searchUsers']);
 
             Route::post('/rmb/method/rate/update', [RMBPaymentMethodController::class, 'updateRates']);
 

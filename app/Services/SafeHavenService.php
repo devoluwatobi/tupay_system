@@ -490,6 +490,10 @@ class SafeHavenService
                 ]
             );
 
+            $verification->update([
+                "status" => 1
+            ]);
+
             return true;
         }
         return false;

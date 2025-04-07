@@ -49,10 +49,10 @@ class SafeSubAccountController extends Controller
         $user = auth('api')->user();
         $user = User::find($user->id);
 
-        $old_v = SafeSubAccount::where("user_id", $user->id)->where("status", 1)->first();
+        $old_v = SafeSubAccount::where('id_type', $request->type)->where("id_value", $request->number)->where("status", 1)->first();
 
         if ($old_v &&  $old_v->status == 1) {
-            return response(['status' => true, 'message' => $request->type . ' has already been verified and saved successfully', 'verification_details' => SafeVerification::where("user_id", $user->id)->where("type", $request->type)->where("status", 1)->get(),], 200);
+            return response(['status' => true, 'message' => 'An account with the ' . $request->type . ' has already been verified and saved successfully',], 422);
         }
 
         $verif_body = [

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use DateTimeZone;
 use Carbon\Carbon;
+use App\Models\User;
 use App\Models\AppConfig;
 use App\Models\BankDetails;
 use App\Services\FCMService;
 use Illuminate\Http\Request;
+use App\Services\WalletService;
 use App\Models\WalletTransaction;
 use App\Services\SafeHavenService;
 use Illuminate\Support\Facades\Log;
@@ -23,8 +25,10 @@ class WalletTransactionController extends Controller
     {
         $user = auth('api')->user();
         $validator = Validator::make($request->all(), [
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:1|max:2500000',
         ]);
+
+
 
         if ($user->status != 1) {
             $response = ["message" => "Account Restricted.\n. Contact support for more information"];
@@ -36,6 +40,25 @@ class WalletTransactionController extends Controller
         }
 
         $wallet = $user->wallet;
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
 
         // check if user has bank details
         $bankAccount = null;
@@ -59,7 +82,7 @@ class WalletTransactionController extends Controller
         }
 
         // check if the balance is within the range of the minimum and maximum withdrawal amount
-        if ($request->amount < 1000 || $request->amount > 5000000) {
+        if ($request->amount < 1000 || $request->amount > 2500000) {
             return response(['message' => 'The amount you are trying to withdraw is not within the range of the minimum and maximum withdrawal amount'], 422);
         }
 

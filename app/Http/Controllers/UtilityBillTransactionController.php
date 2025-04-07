@@ -5,15 +5,17 @@ namespace App\Http\Controllers;
 use Exception;
 use DateTimeZone;
 use Carbon\Carbon;
+use App\Models\User;
 use App\Models\Utility;
 use App\Services\FCMService;
 use Illuminate\Http\Request;
+use App\Services\WalletService;
+use App\Services\SafeHavenService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use App\Models\UtilityBillTransaction;
-use App\Services\SafeHavenService;
 use Illuminate\Support\Facades\Validator;
 
 class UtilityBillTransactionController extends Controller
@@ -239,7 +241,7 @@ class UtilityBillTransactionController extends Controller
             'meter_no' => 'required',
             'meter_type' => 'required',
             'phone_no' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:500|max:2500000',
             'product' => 'required',
         ]);
         if ($validator->fails()) {
@@ -247,6 +249,25 @@ class UtilityBillTransactionController extends Controller
         }
         $user = auth('api')->user();
         $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
+
         if ($user->status != 1) {
             $response = ["message" => "Account Restricted.\n. Contact support for more information"];
             return response($response, 422);
@@ -406,7 +427,7 @@ class UtilityBillTransactionController extends Controller
         $validator = Validator::make($request->all(), [
             'product' => 'required',
             'phone_no' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:100|max:2500000',
 
         ]);
         if ($validator->fails()) {
@@ -422,6 +443,25 @@ class UtilityBillTransactionController extends Controller
 
 
         $wallet = $user->wallet;
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
 
         if ($request->amount > $wallet->balance) {
             return response(['message' => 'Insufficient funds in Naira wallet'], 422);
@@ -546,7 +586,7 @@ class UtilityBillTransactionController extends Controller
             'phone_no' => 'required',
             'code' => 'required',
             'variation_name' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:1|max:2500000',
             'product' => 'required',
         ]);
         if ($validator->fails()) {
@@ -555,6 +595,24 @@ class UtilityBillTransactionController extends Controller
         $user = auth('api')->user();
         $wallet = $user->wallet;
         $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
 
         if ($user->status != 1) {
             $response = ["message" => "Account Restricted.\n. Contact support for more information"];
@@ -697,7 +755,7 @@ class UtilityBillTransactionController extends Controller
             'variation_name' => 'required',
             'smart_card_no' => 'required',
             'customer_name' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:1|max:2500000',
             'product' => 'required',
         ]);
         if ($validator->fails()) {
@@ -706,6 +764,24 @@ class UtilityBillTransactionController extends Controller
         $user = auth('api')->user();
         $wallet = $user->wallet;
         $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
 
         if ($user->status != 1) {
             $response = ["message" => "Account Restricted.\n. Contact support for more information"];
@@ -825,7 +901,7 @@ class UtilityBillTransactionController extends Controller
         $validator = Validator::make($request->all(), [
             'product' => 'required',
             'phone_no' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:100|max:10000',
 
         ]);
         if ($validator->fails()) {
@@ -841,6 +917,24 @@ class UtilityBillTransactionController extends Controller
 
 
         $wallet = $user->wallet;
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
 
         if ($request->amount > $wallet->balance) {
             return response(['message' => 'Insufficient funds in Naira wallet'], 422);
@@ -984,7 +1078,7 @@ class UtilityBillTransactionController extends Controller
             'phone_no' => 'required',
             'code' => 'required',
             'variation_name' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:1|max:100000',
             'product' => 'required',
         ]);
         if ($validator->fails()) {
@@ -993,6 +1087,27 @@ class UtilityBillTransactionController extends Controller
 
         $user = auth('api')->user();
         $wallet = $user->wallet;
+
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
+
         if ($request->amount > $wallet->balance) {
             return response(['error' => 'Insufficient funds in wallet'], 422);
         }
@@ -1172,7 +1287,7 @@ class UtilityBillTransactionController extends Controller
             'variation_name' => 'required',
             'smart_card_no' => 'required',
             'customer_name' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:1|max:250000',
             'product' => 'required',
         ]);
 
@@ -1182,6 +1297,24 @@ class UtilityBillTransactionController extends Controller
         $user = auth('api')->user();
         $wallet = $user->wallet;
         $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
 
         if ($user->status != 1) {
             $response = ["message" => "Account Restricted.\n. Contact support for more information"];
@@ -1400,7 +1533,7 @@ class UtilityBillTransactionController extends Controller
             'meter_no' => 'required',
             'meter_type' => 'required',
             'phone_no' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:500|max:100000',
             'product' => 'required',
         ]);
 
@@ -1409,6 +1542,26 @@ class UtilityBillTransactionController extends Controller
         }
         $user = auth('api')->user();
         $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
+
+
         if ($user->status != 1) {
             $response = ["message" => "Account Restricted.\n. Contact support for more information"];
             return response($response, 422);

@@ -8,6 +8,7 @@ use App\Models\Wallet;
 use App\Models\RewardWallet;
 use App\Services\FCMService;
 use Illuminate\Http\Request;
+use App\Services\WalletService;
 use Illuminate\Support\Facades\Log;
 use App\Models\RewardWalletTransaction;
 
@@ -57,6 +58,27 @@ class RewardWalletController extends Controller
     public function claim()
     {
         $user = auth('api')->user();
+
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
 
 
         $reward_wallet = RewardWallet::where("user_id", $user->id)->first();

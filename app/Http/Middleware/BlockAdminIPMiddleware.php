@@ -30,7 +30,9 @@ class BlockAdminIPMiddleware
     {
         $user = auth()->user();
 
-        if ($user && $user->role < 1) {
+        if (!$user || ($user && $user->role < 1) || ($user && $user->status != 1)) {
+
+            return response()->json(['error' => 'Unauthorized', 'message' => 'You dont have permission to access this resource, Contact support for more information'], 401);
 
             abort(403, 'Your IP is blacklisted.');
         }

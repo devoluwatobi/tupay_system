@@ -62,6 +62,15 @@ class SafeVerificationController extends Controller
             return response(['status' => true, 'message' => $request->type . ' has already been verified and saved successfully', 'verification_details' => SafeVerification::where("user_id", $user->id)->where("type", $request->type)->where("status", 1)->get(),], 200);
         }
 
+        $ex_v =  SafeVerification::where('type', $request->type)->where("value", $request->number)->where("status", 1)->first();
+
+        if ($ex_v &&  $ex_v->status == 1) {
+
+            SafeHavenService::createSubAccount($user->id, $old_v->type, $old_v->otp);
+
+            return response(['status' => true, 'message' => 'An account with the ' . $request->type . ' has already been verified and saved successfully',], 422);
+        }
+
         $verif_body = [
             "type" => $request->type,
             "number" => $request->number,

@@ -45,6 +45,7 @@ class User extends Authenticatable
         'referrer',
         'pin',
         'gender',
+        'status',
     ];
 
     // create constant for user role

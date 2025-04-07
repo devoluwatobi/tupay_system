@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
+use App\Models\User;
+use App\Services\FCMService;
 use Illuminate\Http\Request;
+use App\Services\WalletService;
 use App\Models\BettingTransaction;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
@@ -84,7 +87,7 @@ class BettingTransactionController extends Controller
         $validator = Validator::make($request->all(), [
             'product' => 'required',
             'customer_id' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:100|max:2500000',
             // 'reference' => 'required',
         ]);
         if ($validator->fails()) {
@@ -97,6 +100,27 @@ class BettingTransactionController extends Controller
         }
 
         $wallet = $user->wallet;
+
+        $wallet = $user->wallet;
+        $rmb_wallet = $user->rmb;
+
+        $book_balance = WalletService::getBookBalance($user->id);
+
+        if ((($book_balance['ngn'] + 100) < $wallet->balance) || (($book_balance['rmb'] + 100) < $rmb_wallet->balance)) {
+
+
+            User::find($user->id)->update([
+                "status" => 0
+            ]);
+
+            FCMService::sendToAdmins([
+                "title" => "User account got restricted",
+                "body" => "A user account ( " . $user->email . " ) with irregular balance just got restricted. Please do check."
+            ]);
+
+            $response = ["message" => "Account Restricted.\n. Contact support for more information"];
+            return response($response, 422);
+        }
 
         // check if the user has enough money to withdraw
         if ($wallet->balance < $request->amount) {

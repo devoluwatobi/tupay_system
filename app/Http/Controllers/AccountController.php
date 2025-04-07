@@ -290,4 +290,56 @@ class AccountController extends Controller
         return response($uniqueUsers, 200);
     }
 
+    public function searchUsers(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'query' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors(), "message" => json_encode($validator->errors())], 401);
+        }
+
+        // Get the search query from the request
+        $search = $request->input('query');
+
+
+
+        // Perform the search
+        $users = User::where(function ($query) use ($search) {
+            $query->where('first_name', 'like', '%' . $search . '%')->orWhere('last_name', 'like', '%' . $search . '%')->orWhere('username', 'like', '%' . $search . '%')
+                ->orWhere('email', 'like', '%' . $search . '%')->orWhere('phone', 'like', '%' . $search . '%');
+        })->get();
+
+        // // Get users that have phone numbers
+        // $admins = User::where('role', '>', 0)->get();
+
+        // $combinedUsers = $users->merge($admins);
+        // $uniqueUsers = $combinedUsers->unique('id');
+
+        $uniqueUsers = $users;
+
+
+
+        foreach ($uniqueUsers  as $user) {
+            $bvn = Verification::where("type", "bvn")->where("user_id", $user->id)->first();
+            $nin = Verification::where("type", "nin")->where("user_id", $user->id)->first();
+            $user_wallet = Wallet::where("user_id", $user->id)->first();
+            $user->balance = $user_wallet->balance;
+            $user->photo = env('APP_URL') . $user->photo;
+            $user->bvn_verification = $bvn && $bvn->verification_status == "Approved" ? 1 : 0;
+            $user->nin_verification = $nin && $nin->verification_status == "Approved" ? 1 : 0;
+            if ($user->referrer && $user->referrer !=  null) {
+                $referrer = User::where("username", $user->referrer)->first();
+                if ($referrer) {
+                    $user->referrer =  $referrer->first_name . " " . User::where("username", $user->referrer)->first()->last_name;
+                }
+            }
+        }
+
+
+        // // return response with message and data
+        return response($uniqueUsers, 200);
+    }
 }

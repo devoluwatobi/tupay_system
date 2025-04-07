@@ -19,9 +19,9 @@ class RestrictSuspendedAccount
 
         if ($user && $user->status != 1) {
 
-            return response()->json(['error' => 'Unauthorized', 'message' => 'Service Restricted, Please Reach out to Customer Support'], 401);
+            return response()->json(['error' => 'Unauthorized', 'message' => 'Service Restricted, Contact support for more information'], 401);
 
-            abort(403, 'Service Restricted, Please Reach out to Customer Support');
+            abort(403, 'Service Restricted, Contact support for more information');
         }
         return $next($request);
     }
