@@ -301,7 +301,7 @@ class HomeController extends Controller
         $betData = BettingTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
         $utiData = UtilityBillTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
         $rmb_trx = RMBWalletTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
-        $fund = TupaySubAccountTransaction::where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
+        $fund = TupaySubAccountTransaction::where('user_id', '!=', 0)->where('status', '<>', 0)->whereBetween('created_at', [$startDate, $endDate])->orderByDesc('created_at')->get();
 
 
         $wallTrans = [];
@@ -327,8 +327,9 @@ class HomeController extends Controller
 
 
             // fill up trx
+            $status_data = getTransactionStatus($walletTransaction->status);
             $transaction = $walletTransaction;
-            $transaction->status = getTransactionStatus($walletTransaction->status)['status'];
+            $transaction->status = $status_data['status'];
 
 
 
@@ -339,8 +340,8 @@ class HomeController extends Controller
                 'sub_type_id' => 0,
                 'icon' => env('APP_URL') . "/images/services/withdraw.png",
                 'amount' => number_format((float) $walletTransaction->amount, 2),
-                'status' =>  getTransactionStatus($walletTransaction->status)['status'],
-                'color' => getTransactionStatus($walletTransaction->status)['color'],
+                'status' =>  $status_data['status'],
+                'color' => $status_data['color'],
                 'created_at' => $walletTransaction->created_at,
                 'updated_at' => $walletTransaction->created_at,
                 'trx' => $transaction,
@@ -354,10 +355,11 @@ class HomeController extends Controller
 
 
             // fill up trx
+            $status_data = getTransactionStatus($rmbTransaction->status);
             $rmbTransaction->proofs = json_decode($rmbTransaction->proofs);
             $transaction = $rmbTransaction;
             // $transaction->proofs = json_decode($rmbTransaction->proofs);
-            $transaction->status = getTransactionStatus($rmbTransaction->status)['status'];;
+            $transaction->status =  $status_data['status'];;
 
             $rmbTrans[] = [
                 'id' => $rmbTransaction->id,
@@ -367,8 +369,8 @@ class HomeController extends Controller
                 'icon' => env('APP_URL') . $method->logo,
                 'currency' => "CN¥",
                 'amount' => number_format($rmbTransaction->amount, 2),
-                'status' => getTransactionStatus($rmbTransaction->status)['status'],
-                'color' => getTransactionStatus($rmbTransaction->status)['color'],
+                'status' =>  $status_data['status'],
+                'color' =>  $status_data['color'],
                 'created_at' => $rmbTransaction->created_at,
                 'updated_at' => $rmbTransaction->updated_at,
                 'trx' => $transaction,
@@ -378,8 +380,9 @@ class HomeController extends Controller
         foreach ($betData as $betTransaction) {
 
             // fill up trx
+            $status_data = getTransactionStatus($betTransaction->status);
             $transaction = $betTransaction;
-            $transaction->status = getTransactionStatus($betTransaction->status)['status'];
+            $transaction->status = $status_data['status'];
 
             $betTrans[] = [
                 'id' => $betTransaction->id,
@@ -389,8 +392,8 @@ class HomeController extends Controller
                 // 'icon' => "https://res.cloudinary.com/db3c1repq/image/upload/v1713497804/_1baa1896-2b36-44f9-8cd4-b71dcfc2efae_ghvd6j.jpg",
                 'icon' => env('APP_URL') . "/images/services/bet.png",
                 'amount' => number_format($betTransaction->amount, 2),
-                'status' => getTransactionStatus($betTransaction->status)['status'],
-                'color' => getTransactionStatus($betTransaction->status)['color'],
+                'status' => $status_data['status'],
+                'color' => $status_data['color'],
                 'created_at' => $betTransaction->created_at,
                 'updated_at' => $betTransaction->updated_at,
                 'trx' => $transaction,
@@ -404,10 +407,11 @@ class HomeController extends Controller
 
 
             // fill up trx
+            $status_data = getTransactionStatus($rmbTransaction->status);
             $rmbTransaction->proofs = json_decode($rmbTransaction->proofs);
             $transaction = $rmbTransaction;
             // $transaction->proofs = json_decode($rmbTransaction->proofs);
-            $transaction->status = getTransactionStatus($rmbTransaction->status)['status'];
+            $transaction->status = $status_data['status'];
             $rmbTrans[] = [
                 'id' => $rmbTransaction->id,
                 'title' => "RMB Wallet " . ($rmbTransaction->type == 1 ? "Top-up" : "Withdrawal"),
@@ -416,8 +420,8 @@ class HomeController extends Controller
                 'icon' => env('APP_URL') . '/images/services/rmb_' . ($rmbTransaction->type == 1 ? 'top_up' : 'withdrawal') . '.png',
                 'currency' => "CN¥",
                 'amount' => number_format($rmbTransaction->amount, 2),
-                'status' =>  getTransactionStatus($rmbTransaction->status)['status'],
-                'color' => getTransactionStatus($rmbTransaction->status)['color'],
+                'status' =>  $status_data['status'],
+                'color' => $status_data['color'],
                 'created_at' => $rmbTransaction->created_at,
                 'updated_at' => $rmbTransaction->updated_at,
                 'trx' => $transaction,
@@ -429,9 +433,10 @@ class HomeController extends Controller
 
 
             // fill up trx
+            $status_data = getTransactionStatus($billTransaction->status);
             $transaction = $billTransaction;
             $transaction->service_icon = env('APP_URL') . $billTransaction->service_icon;
-            $transaction->status = getTransactionStatus($billTransaction->status)['status'];
+            $transaction->status =  $status_data['status'];
             $transaction->utility_name = $billTransaction->type;
             $transaction->utility_prefix = $billTransaction->type;
 
@@ -442,8 +447,8 @@ class HomeController extends Controller
                 'sub_type_id' => $billTransaction->utility_id,
                 'icon' => $transaction->service_icon,
                 'amount' => $billTransaction->amount,
-                'status' => getTransactionStatus($billTransaction->status)['status'],
-                'color' => getTransactionStatus($billTransaction->status)['color'],
+                'status' =>  $status_data['status'],
+                'color' =>  $status_data['color'],
                 'created_at' => $billTransaction->created_at,
                 'updated_at' => $billTransaction->created_at,
                 'trx' => $transaction,
@@ -453,7 +458,8 @@ class HomeController extends Controller
         foreach ($fund as $transaction) {
 
             // $transaction->proofs = json_decode($rmbTransaction->proofs);
-            $transaction->status = getTransactionStatus($transaction->status)['status'];
+            $status_data = getTransactionStatus($transaction->status);
+            $transaction->status = $status_data['status'];
             $fundTrx[] = [
                 'id' => $transaction->id,
                 'title' => "Wallet Top-Up",
@@ -462,8 +468,8 @@ class HomeController extends Controller
                 'icon' => env('APP_URL') . "/images/services/fund.png",
                 'currency' => "₦",
                 'amount' => number_format($transaction->settlement, 2),
-                'status' => getTransactionStatus($transaction->status)['status'],
-                'color' => getTransactionStatus($transaction->status)['color'],
+                'status' => $status_data['status'],
+                'color' => $status_data['color'],
                 'created_at' => $transaction->created_at,
                 'updated_at' => $transaction->updated_at,
                 'trx' => $transaction,
