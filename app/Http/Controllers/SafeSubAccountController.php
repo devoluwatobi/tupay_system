@@ -6,11 +6,11 @@ use App\Models\User;
 use App\Models\SystemConfig;
 use Illuminate\Http\Request;
 use App\Models\SafeSubAccount;
+use App\Models\TupaySubAccount;
 use App\Models\SafeVerification;
 use App\Services\SafeHavenService;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Models\TupaySubAccount;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
@@ -155,7 +155,7 @@ class SafeSubAccountController extends Controller
             "identityType" => $sub_account->id_type,
             "identityNumber" => $sub_account->id_value,
             "otp" => $request->otp,
-            "callbackUrl" => "https://webhook.site/2a530298-5ae4-4955-aa48-9c1420a2bc3d",
+            "callbackUrl" => "https://api.tupay.ng/api/safe-hook",
             "identityId" => $sub_account->id_safe_id,
             "autoSweep" => true,
             "autoSweepDetails" => [

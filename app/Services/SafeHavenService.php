@@ -425,7 +425,7 @@ class SafeHavenService
             "identityType" => $verification->id_type,
             "identityNumber" => $verification->id_value,
             "otp" => $otp,
-            "callbackUrl" => "https://api.tupay.ng/api//safe-hook",
+            "callbackUrl" => "https://api.tupay.ng/api/safe-hook",
             "identityId" => $verification->id_safe_id,
             "autoSweep" => true,
             "autoSweepDetails" => [

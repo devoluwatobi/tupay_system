@@ -296,7 +296,7 @@ class SafeVerificationController extends Controller
             "identityType" => $verification->type,
             "identityNumber" => $verification->value,
             "otp" => $verification->value,
-            "callbackUrl" => "https://webhook.site/2a530298-5ae4-4955-aa48-9c1420a2bc3d",
+            "callbackUrl" => "https://api.tupay.ng/api/safe-hook",
             "identityId" => $verification->safe_id,
             "autoSweep" => true,
             "autoSweepDetails" => [

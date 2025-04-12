@@ -189,7 +189,7 @@ class TupaySubAccountTransactionController extends Controller
                 $user->id,
                 [
                     'title' => 'Tupay Wallet Funded',
-                    'body' => "You just funded your Faveremit wallet with an amount of NGN" . ($data["data"]['amount'] - $charge) . "💸",
+                    'body' => "You just funded your Tupay wallet with an amount of NGN" . ($data["data"]['amount'] - $charge) . "💸",
                 ]
             );
         } catch (Exception $e) {
