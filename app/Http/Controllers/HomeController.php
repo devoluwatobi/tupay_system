@@ -1182,7 +1182,7 @@ class HomeController extends Controller
 
         foreach ($rmb as $trx) {
             $owner = User::where('id', $trx->user_id)->first();
-            $trx->owner_name = $owner->first_name . ' ' . $owner->last_name[0];
+            $trx->owner_name = $owner->first_name . ' ' . ($owner->last_name[0] ?? "");
             $trx->owner_mail = hideEmailAddresshideEmailAddress($owner->email);
             $trx->owner_photo = $owner->photo;
         }

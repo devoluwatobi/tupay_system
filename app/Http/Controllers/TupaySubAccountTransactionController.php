@@ -47,7 +47,7 @@ class TupaySubAccountTransactionController extends Controller
             ], 200);
         }
 
-        $x_trx = TupaySubAccountTransaction::where("paymentReference", $request["data"]['paymentReference'])->first();
+        $x_trx = TupaySubAccountTransaction::where("sessionId", $request["data"]['sessionId'])->first();
 
         if ($x_trx) {
             return response([
